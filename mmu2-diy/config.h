@@ -19,7 +19,7 @@
 #define TIMEOUT_LOAD_UNLOAD 20000
 
 // changed from 125 to 115 (10.13.18)
-#define MAXROLLERTRAVEL 125         // number of steps that the roller bearing stepper motor can travel
+#define MAXIDLERTRAVEL 125         // number of steps that the roller bearing stepper motor can travel
 
 #define FULL_STEP  1u
 #define HALF_STEP  2u
@@ -85,7 +85,7 @@ int CSOFFSET[5] = {30,30,0,-15,-30};
 //*************************************************************************************************
 #define IDLERMOTORDELAY  540     //540 useconds      (idler motor)  was at '500' on 10.13.18
 #define EXTRUDERMOTORDELAY 60 //60//50     // 150 useconds    (controls filament feed speed to the printer)
-#define COLORSELECTORMOTORDELAY 72 // 60 useconds    (selector motor)
+#define SELECTORMOTORDELAY 72 // 60 useconds    (selector motor)
 
 //#define SKRMINI
 //#define GT2560
