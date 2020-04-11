@@ -696,9 +696,10 @@ void initColorSelector()
 
 	digitalWrite(colorSelectorEnablePin, ENABLE);		   // turn on the stepper motor
 	delay(1);											   // wait for 1 millisecond
-	csTurnAmount(MAXSELECTOR_STEPS, CCW);				   // move to the right
-	csTurnAmount(MAXSELECTOR_STEPS + CS_RIGHT_FORCE, CW); // move all the way to the left
+	csTurnAmount(MAXSELECTOR_STEPS, CW);                   // move to the left
+	csTurnAmount(MAXSELECTOR_STEPS + CS_RIGHT_FORCE, CCW); // move all the way to the right
 	digitalWrite(colorSelectorEnablePin, DISABLE);		   // turn off the stepper motor
+	currentPosition = MAXSELECTOR_STEPS;
 }
 
 /*****************************************************
