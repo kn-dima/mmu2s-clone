@@ -285,6 +285,7 @@ void Application::loop()
 			unloadFilamentToFinda(); //unload the filament
 			parkIdler();			 // park the idler motor and turn it off
 		}
+		else printHelp();
 	}
 #endif
 
@@ -1380,6 +1381,16 @@ bool filamentLoadWithBondTechGear()
 	return true;
 }
 
+void printHelp()
+{
+	println_log(F("Available commands:"));
+	println_log(F("'A' - Tool change in cycle."));
+	println_log(F("'C' - Load filament"));
+	println_log(F("'D' - Load and unload all filaments in cycle."));
+	println_log(F("'T0'-'T4' - Tool change."));
+	println_log(F("'U' - Unload filament"));
+	println_log(F("'Z' - Status"));
+}
 /************************************************************************************************************/
 /************************************************************************************************************/
 /************************************************************************************************************/

@@ -1,4 +1,4 @@
-#ifndef APPLICATION_H
+﻿#ifndef APPLICATION_H
 #define APPLICATION_H
 
 #include <Arduino.h>
@@ -28,6 +28,7 @@ extern void csTurnAmount(int steps, int direction);
 extern void feedFilament(unsigned int steps, int stoptoextruder);
 extern void idlerturnamount(int steps, int dir);
 extern void syncColorSelector();
+extern void printHelp();
 
 class Application
 {
