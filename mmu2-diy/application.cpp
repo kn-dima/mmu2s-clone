@@ -591,52 +591,52 @@ loop:
 	case '0':
 		// position '0' is always just a move to the left
 		// the '+CS_RIGHT_FORCE_SELECTOR_0' is an attempt to move the selector ALL the way left (puts the selector into known position)
-		csTurnAmount(currentPosition + CS_RIGHT_FORCE_SELECTOR_0, CCW);
+		csTurnAmount(currentPosition + CS_RIGHT_FORCE_SELECTOR_0, CW);
 		// Apply CSOFFSET
-		csTurnAmount((selectorAbsPos[0]), CW);
+		csTurnAmount((selectorAbsPos[0]), CCW);
 		currentPosition = selectorAbsPos[0];
 		break;
 	case '1':
 		if (currentPosition <= selectorAbsPos[1])
 		{
-			csTurnAmount((selectorAbsPos[1] - currentPosition), CW);
+			csTurnAmount((selectorAbsPos[1] - currentPosition), CCW);
 		}
 		else
 		{
-			csTurnAmount((currentPosition - selectorAbsPos[1]), CCW);
+			csTurnAmount((currentPosition - selectorAbsPos[1]), CW);
 		}
 		currentPosition = selectorAbsPos[1];
 		break;
 	case '2':
 		if (currentPosition <= selectorAbsPos[2])
 		{
-			csTurnAmount((selectorAbsPos[2] - currentPosition), CW);
+			csTurnAmount((selectorAbsPos[2] - currentPosition), CCW);
 		}
 		else
 		{
-			csTurnAmount((currentPosition - selectorAbsPos[2]), CCW);
+			csTurnAmount((currentPosition - selectorAbsPos[2]), CW);
 		}
 		currentPosition = selectorAbsPos[2];
 		break;
 	case '3':
 		if (currentPosition <= selectorAbsPos[3])
 		{
-			csTurnAmount((selectorAbsPos[3] - currentPosition), CW);
+			csTurnAmount((selectorAbsPos[3] - currentPosition), CCW);
 		}
 		else
 		{
-			csTurnAmount((currentPosition - selectorAbsPos[3]), CCW);
+			csTurnAmount((currentPosition - selectorAbsPos[3]), CW);
 		}
 		currentPosition = selectorAbsPos[3];
 		break;
 	case '4':
 		if (currentPosition <= selectorAbsPos[4])
 		{
-			csTurnAmount((selectorAbsPos[4] - currentPosition), CW);
+			csTurnAmount((selectorAbsPos[4] - currentPosition), CCW);
 		}
 		else
 		{
-			csTurnAmount((currentPosition - selectorAbsPos[4]), CCW);
+			csTurnAmount((currentPosition - selectorAbsPos[4]), CW);
 		}
 		currentPosition = selectorAbsPos[4];
 		break;
@@ -649,14 +649,11 @@ loop:
  * this is the selector motor with the lead screw (final stage of the MMU2 unit)
  * 
  *****************************************************/
-void csTurnAmount(int steps, int direction)
+void csTurnAmount(int steps, int dir)
 {
 
 	digitalWrite(colorSelectorEnablePin, ENABLE); // turn on the color selector motor
-	if (direction == CW)
-		digitalWrite(colorSelectorDirPin, LOW); // set the direction for the Color Extruder Stepper Motor
-	else
-		digitalWrite(colorSelectorDirPin, HIGH);
+	digitalWrite(colorSelectorDirPin, dir); // set the direction for the Color Extruder Stepper Motor
 	// FIXME ??? NEEDED ???
 	// wait 1 milliseconds
 	delayMicroseconds(1500); // changed from 500 to 1000 microseconds on 10.6.18, changed to 1500 on 10.7.18)
@@ -679,7 +676,7 @@ void csTurnAmount(int steps, int direction)
 		delayMicroseconds(PINLOW);					// delay for 10 useconds
 		delayMicroseconds(COLORSELECTORMOTORDELAY); // wait for 60 useconds
 		//add enstop
-		if ((digitalRead(colorSelectorEnstop) == LOW) && (direction == CW))
+		if ((digitalRead(colorSelectorEnstop) == LOW) && (dir == CCW))
 			break;
 	}
 
@@ -699,8 +696,8 @@ void initColorSelector()
 
 	digitalWrite(colorSelectorEnablePin, ENABLE);		   // turn on the stepper motor
 	delay(1);											   // wait for 1 millisecond
-	csTurnAmount(MAXSELECTOR_STEPS, CW);				   // move to the right
-	csTurnAmount(MAXSELECTOR_STEPS + CS_RIGHT_FORCE, CCW); // move all the way to the left
+	csTurnAmount(MAXSELECTOR_STEPS, CCW);				   // move to the right
+	csTurnAmount(MAXSELECTOR_STEPS + CS_RIGHT_FORCE, CW); // move all the way to the left
 	digitalWrite(colorSelectorEnablePin, DISABLE);		   // turn off the stepper motor
 }
 
@@ -725,8 +722,8 @@ void syncColorSelector()
 	print_log(F("syncColorSelector()   moveSteps: "));
 	println_log(moveSteps);
 
-	csTurnAmount(moveSteps, CW);						   // move all the way to the right
-	csTurnAmount(MAXSELECTOR_STEPS + CS_RIGHT_FORCE, CCW); // move all the way to the left
+	csTurnAmount(moveSteps, CCW);						   // move all the way to the right
+	csTurnAmount(MAXSELECTOR_STEPS + CS_RIGHT_FORCE, CW); // move all the way to the left
 														   //FIXME : turn off motor ???
 														   //digitalWrite(colorSelectorEnablePin, DISABLE); // turn off the stepper motor
 }
@@ -751,8 +748,8 @@ void initIdlerPosition()
 	digitalWrite(idlerEnablePin, ENABLE); // turn on the roller bearing motor
 	delay(1);
 	oldBearingPosition = 125; // points to position #1
-	idlerturnamount(MAXROLLERTRAVEL, CW);
-	idlerturnamount(MAXROLLERTRAVEL, CCW); // move the bearings out of the way
+	idlerturnamount(MAXROLLERTRAVEL, CCW);
+	idlerturnamount(MAXROLLERTRAVEL, CW); // move the bearings out of the way
 	digitalWrite(idlerEnablePin, DISABLE); // turn off the idler roller bearing motor
 
 	filamentSelection = 0; // keep track of filament selection (0,1,2,3,4))
@@ -824,9 +821,9 @@ void idlerSelector(char filament)
 
 	newSetting = newBearingPosition - oldBearingPosition;
 	if (newSetting < 0)
-		idlerturnamount(-newSetting, CW); // turn idler to appropriate position
+		idlerturnamount(-newSetting, CCW); // turn idler to appropriate position
 	else
-		idlerturnamount(newSetting, CCW); // turn idler to appropriate position
+		idlerturnamount(newSetting, CW); // turn idler to appropriate position
 	oldBearingPosition = newBearingPosition;
 }
 
@@ -933,7 +930,7 @@ void loadFilamentToFinda()
 	unsigned long startTime, currentTime;
 
 	digitalWrite(extruderEnablePin, ENABLE);
-	digitalWrite(extruderDirPin, CCW); // set the direction of the MMU2 extruder motor
+	digitalWrite(extruderDirPin, CW); // set the direction of the MMU2 extruder motor
 	delay(1);
 
 	startTime = millis();
@@ -955,7 +952,7 @@ loop:
 	//
 	// for a filament load ... need to get the filament out of the selector head !!
 	//
-	digitalWrite(extruderDirPin, CW); // back the filament away from the selector
+	digitalWrite(extruderDirPin, CCW); // back the filament away from the selector
 	// after hitting the FINDA sensor, back away by UNLOAD_LENGTH_BACK_COLORSELECTOR mm
 	feedFilament(STEPSPERMM * UNLOAD_LENGTH_BACK_COLORSELECTOR, IGNORE_STOP_AT_EXTRUDER);
 }
@@ -976,7 +973,7 @@ void unloadFilamentToFinda()
 	}
 
 	digitalWrite(extruderEnablePin, ENABLE); // turn on the extruder motor
-	digitalWrite(extruderDirPin, CW);		 // set the direction of the MMU2 extruder motor
+	digitalWrite(extruderDirPin, CCW);		 // set the direction of the MMU2 extruder motor
 	delay(1);
 
 	startTime = millis();
@@ -1016,7 +1013,7 @@ loop:
 	}
 
 	// back the filament away from the selector by UNLOAD_LENGTH_BACK_COLORSELECTOR mm
-	digitalWrite(extruderDirPin, CW);
+	digitalWrite(extruderDirPin, CCW);
 	feedFilament(STEPSPERMM * UNLOAD_LENGTH_BACK_COLORSELECTOR, IGNORE_STOP_AT_EXTRUDER);
 }
 
@@ -1043,7 +1040,7 @@ void parkIdler()
 	newSetting = MAXROLLERTRAVEL - oldBearingPosition;
 	oldBearingPosition = MAXROLLERTRAVEL; // record the current roller status  (CSK)
 
-	idlerturnamount(newSetting, CCW); // move the bearing roller out of the way
+	idlerturnamount(newSetting, CW); // move the bearing roller out of the way
 	idlerStatus = INACTIVE;
 
 	digitalWrite(idlerEnablePin, DISABLE);	// turn off the roller bearing stepper motor  (nice to do, cuts down on CURRENT utilization)
@@ -1064,7 +1061,7 @@ void unParkIdler()
 	rollerSetting = MAXROLLERTRAVEL - bearingAbsPos[filamentSelection];
 	oldBearingPosition = bearingAbsPos[filamentSelection]; // update the idler bearing position
 
-	idlerturnamount(rollerSetting, CW); // restore the old position
+	idlerturnamount(rollerSetting, CCW); // restore the old position
 	idlerStatus = ACTIVE;				// mark the idler as active
 
 	digitalWrite(extruderEnablePin, ENABLE); // turn on (enable) the extruder stepper motor as well
@@ -1082,7 +1079,7 @@ void quickParkIdler()
 	digitalWrite(idlerEnablePin, ENABLE); // turn on the idler stepper motor
 	delay(1);
 
-	idlerturnamount(IDLERSTEPSIZE, CCW);
+	idlerturnamount(IDLERSTEPSIZE, CW);
 
 	oldBearingPosition = oldBearingPosition + IDLERSTEPSIZE; // record the current position of the IDLER bearing
 	idlerStatus = QUICKPARKED;								 // use this new state to show the idler is pending the 'C0' command
@@ -1104,7 +1101,7 @@ void quickUnParkIdler()
 
 	rollerSetting = oldBearingPosition - IDLERSTEPSIZE; // go back IDLERSTEPSIZE units (hopefully re-enages the bearing
 
-	idlerturnamount(IDLERSTEPSIZE, CW); // restore old position
+	idlerturnamount(IDLERSTEPSIZE, CCW); // restore old position
 
 	print_log(F("quickunparkidler(): oldBearingPosition"));
 	println_log(oldBearingPosition);
@@ -1234,7 +1231,7 @@ void filamentLoadToMK3()
 	deActivateColorSelector();
 
 	digitalWrite(extruderEnablePin, ENABLE); // turn on the extruder stepper motor (10.14.18)
-	digitalWrite(extruderDirPin, CCW);		 // set extruder stepper motor to push filament towards the mk3
+	digitalWrite(extruderDirPin, CW);		 // set extruder stepper motor to push filament towards the mk3
 	delay(1);								 // wait 1 millisecond
 
 	startTime = millis();
@@ -1347,7 +1344,7 @@ bool filamentLoadWithBondTechGear()
 	delayFactor = (float(LOAD_DURATION * 1000.0) / tSteps) - INSTRUCTION_DELAY; // delayFactor algorithm
 
 	digitalWrite(extruderEnablePin, ENABLE); // turn on the extruder stepper motor
-	digitalWrite(extruderDirPin, CCW);		 // set extruder stepper motor to push filament towards the mk3
+	digitalWrite(extruderDirPin, CW);		 // set extruder stepper motor to push filament towards the mk3
 
 	for (i = 0; i < tSteps; i++)
 	{
