@@ -1,4 +1,4 @@
-#ifndef PRINT_H
+﻿#ifndef PRINT_H
 #define PRINT_H
 
 #include <Arduino.h>
@@ -35,7 +35,7 @@
  *                EXP2                                              EXP1
  */
 
-#define SERIAL_DEBUG
+//#define SERIAL_DEBUG
 
 
 void println_log(const __FlashStringHelper *msg);

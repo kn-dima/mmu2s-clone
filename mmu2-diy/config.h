@@ -1,9 +1,9 @@
-#ifndef CONFIG_H
+﻿#ifndef CONFIG_H
 #define CONFIG_H
 
 
 //#define DEBUG
-#define DEBUGMODE
+//#define DEBUGMODE
 
 
 #define SERIAL1ENABLED    1
@@ -90,7 +90,7 @@ int CSOFFSET[5] = {30,30,0,-15,-30};
 #define EXTRUDERMOTORDELAY 60//50     // 150 useconds    (controls filament feed speed to the printer)
 #define COLORSELECTORMOTORDELAY 60 // 60 useconds    (selector motor)
 
-#define SKRMINI
+//#define SKRMINI
 //#define GT2560
 
 
