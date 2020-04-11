@@ -381,119 +381,49 @@ void checkDebugSerialInterface()
 	{
 		kbString = ReadSerialStrUntilNewLine();
 
-		if (kbString[0] == 'C')
+		switch(kbString[0])
 		{
-			println_log(F("Processing 'C' Command"));
-			filamentLoadWithBondTechGear();
-		}
-		if (kbString[0] == 'T')
-		{
-			println_log(F("Processing 'T' Command"));
-			if ((kbString[1] >= '0') && (kbString[1] <= '4'))
-			{
-				toolChange(kbString[1]);
-			}
-			else
-			{
-				println_log(F("T: Invalid filament Selection"));
-			}
-		}
-		if (kbString[0] == 'U')
-		{
-			println_log(F("Processing 'U' Command"));
-			if (idlerStatus == QUICKPARKED)
-			{
-				quickUnParkIdler(); // un-park the idler from a quick park
-			}
-			if (idlerStatus == INACTIVE)
-			{
-				unParkIdler(); // turn on the idler motor
-			}
-			unloadFilamentToFinda(); //unload the filament
-			parkIdler();			 // park the idler motor and turn it off
-		}
-		if (kbString[0] == 'D')
-		{
-			println_log(F("Processing 'D' Command"));
-			println_log(F("initColorSelector"));
-			initColorSelector();
-			println_log(F("initIdlerPosition"));
-			initIdlerPosition();
-			char colors[5] = {'0', '1', '2', '3', '4'};
-			for (int i = 0; i < 5; i++)
-			{
-				char c = colors[i];
-				print_log(F("Color "));
-				println_log(c);
-				moveIdler(c);
-				moveSelector(c);
-				filamentLoadToMK3();
-				unloadFilamentToFinda();
-				delay(5000);
-			}
-		}
-		else if (kbString[0] == 'Z')
-		{
-			print_log(F("FINDA status: "));
-			int fstatus = digitalRead(findaPin);
-			println_log(fstatus);
-			print_log(F("colorSelectorEnstop status: "));
-			int cdenstatus = digitalRead(colorSelectorEnstop);
-			println_log(cdenstatus);
-			print_log(F("Extruder endstop status: "));
-			fstatus = digitalRead(filamentSwitch);
-			Serial.println(fstatus);
-			println_log(F("PINDA | EXTRUDER"));
-			while (true)
-			{
-				isFilamentLoadedPinda() ? print_log(F("ON    | ")) : print_log(F("OFF   | "));
-				isFilamentLoadedtoExtruder() ? println_log(F("ON")) : println_log(F("OFF"));
-				delay(200);
-				if (Serial.available())
+			case 'A':
+			    toolChangeCycleA();
+				break;
+			case 'C':
+				println_log(F("Processing 'C' Command"));
+				filamentLoadWithBondTechGear();
+				break;
+			case 'D':
+			    toolChangeCycleD();
+				break;
+			case 'T':
+				println_log(F("Processing 'T' Command"));
+				if ((kbString[1] >= '0') && (kbString[1] <= '4'))
 				{
-					ReadSerialStrUntilNewLine();
-					break;
+					toolChange(kbString[1]);
 				}
-			}
+				else
+				{
+					println_log(F("T: Invalid filament Selection"));
+				}
+				break;
+			case 'U':
+				println_log(F("Processing 'U' Command"));
+				if (idlerStatus == QUICKPARKED)
+				{
+					quickUnParkIdler(); // un-park the idler from a quick park
+				}
+				if (idlerStatus == INACTIVE)
+				{
+					unParkIdler(); // turn on the idler motor
+				}
+				unloadFilamentToFinda(); //unload the filament
+				parkIdler();			 // park the idler motor and turn it off
+				break;
+			case 'Z':
+				printStatus();
+				break;
+			default:
+				printHelp();
+				break;
 		}
-		else if (kbString[0] == 'A')
-		{
-			println_log(F("Processing 'D' Command"));
-			println_log(F("initColorSelector"));
-			initColorSelector();
-			println_log(F("initIdlerPosition"));
-			initIdlerPosition();
-			println_log(F("T0"));
-			toolChange('0');
-			delay(2000);
-			println_log(F("T1"));
-			toolChange('1');
-			delay(2000);
-			println_log(F("T2"));
-			toolChange('2');
-			delay(2000);
-			println_log(F("T3"));
-			toolChange('3');
-			delay(2000);
-			println_log(F("T4"));
-			toolChange('4');
-			delay(2000);
-			println_log(F("T0"));
-			toolChange('0');
-			delay(2000);
-
-			if (idlerStatus == QUICKPARKED)
-			{
-				quickUnParkIdler(); // un-park the idler from a quick park
-			}
-			if (idlerStatus == INACTIVE)
-			{
-				unParkIdler(); // turn on the idler motor
-			}
-			unloadFilamentToFinda(); //unload the filament
-			parkIdler();			 // park the idler motor and turn it off
-		}
-		else printHelp();
 	}
 }
 
@@ -1391,6 +1321,90 @@ void printHelp()
 	println_log(F("'T0'-'T4' - Tool change."));
 	println_log(F("'U' - Unload filament"));
 	println_log(F("'Z' - Status"));
+}
+
+void toolChangeCycleA()
+{
+	println_log(F("Processing 'A' Command"));
+	println_log(F("initColorSelector"));
+	initColorSelector();
+	println_log(F("initIdlerPosition"));
+	initIdlerPosition();
+	println_log(F("T0"));
+	toolChange('0');
+	delay(2000);
+	println_log(F("T1"));
+	toolChange('1');
+	delay(2000);
+	println_log(F("T2"));
+	toolChange('2');
+	delay(2000);
+	println_log(F("T3"));
+	toolChange('3');
+	delay(2000);
+	println_log(F("T4"));
+	toolChange('4');
+	delay(2000);
+	println_log(F("T0"));
+	toolChange('0');
+	delay(2000);
+
+	if (idlerStatus == QUICKPARKED)
+	{
+		quickUnParkIdler(); // un-park the idler from a quick park
+	}
+	if (idlerStatus == INACTIVE)
+	{
+		unParkIdler(); // turn on the idler motor
+	}
+	unloadFilamentToFinda(); //unload the filament
+	parkIdler();			 // park the idler motor and turn it off
+}
+
+void toolChangeCycleD()
+{
+	println_log(F("Processing 'D' Command"));
+	println_log(F("initColorSelector"));
+	initColorSelector();
+	println_log(F("initIdlerPosition"));
+	initIdlerPosition();
+	char colors[5] = {'0', '1', '2', '3', '4'};
+	for (int i = 0; i < 5; i++)
+	{
+		char c = colors[i];
+		print_log(F("Color "));
+		println_log(c);
+		moveIdler(c);
+		moveSelector(c);
+		filamentLoadToMK3();
+		unloadFilamentToFinda();
+		delay(5000);
+	}
+}
+
+void printStatus()
+{
+	print_log(F("FINDA status: "));
+	int fstatus = digitalRead(findaPin);
+	println_log(fstatus);
+	print_log(F("colorSelectorEnstop status: "));
+	int cdenstatus = digitalRead(colorSelectorEnstop);
+	println_log(cdenstatus);
+	print_log(F("Extruder endstop status: "));
+	fstatus = digitalRead(filamentSwitch);
+	Serial.println(fstatus);
+	println_log(F("PINDA | EXTRUDER"));
+	while (true)
+	{
+		isFilamentLoadedPinda() ? print_log(F("ON    | ")) : print_log(F("OFF   | "));
+		isFilamentLoadedtoExtruder() ? println_log(F("ON")) : println_log(F("OFF"));
+		delay(200);
+		if (Serial.available())
+		{
+			ReadSerialStrUntilNewLine();
+			break;
+		}
+	}
 }
 /************************************************************************************************************/
 /************************************************************************************************************/

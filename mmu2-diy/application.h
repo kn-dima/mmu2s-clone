@@ -30,6 +30,9 @@ extern void feedFilament(unsigned int steps, int stoptoextruder);
 extern void idlerturnamount(int steps, int dir);
 extern void syncColorSelector();
 extern void printHelp();
+extern void printStatus();
+extern void toolChangeCycleA();
+extern void toolChangeCycleD();
 
 class Application
 {
