@@ -204,7 +204,6 @@ void Application::loop()
 			unloadFilamentToFinda(); //unload the filament
 			parkIdler();			 // park the idler motor and turn it off
 		}
-#ifdef DEBUGMODE
 		if (kbString[0] == 'D')
 		{
 			println_log(F("Processing 'D' Command"));
@@ -286,7 +285,6 @@ void Application::loop()
 			unloadFilamentToFinda(); //unload the filament
 			parkIdler();			 // park the idler motor and turn it off
 		}
-#endif
 	}
 #endif
 

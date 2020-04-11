@@ -1,10 +1,7 @@
 ﻿#ifndef CONFIG_H
 #define CONFIG_H
 
-
 //#define DEBUG
-//#define DEBUGMODE
-
 
 #define SERIAL1ENABLED    1
 #define ENABLE LOW                // 8825 stepper motor enable is active low
@@ -87,8 +84,8 @@ int CSOFFSET[5] = {30,30,0,-15,-30};
 //  Delay values for each stepper motor
 //*************************************************************************************************
 #define IDLERMOTORDELAY  540     //540 useconds      (idler motor)  was at '500' on 10.13.18
-#define EXTRUDERMOTORDELAY 60//50     // 150 useconds    (controls filament feed speed to the printer)
-#define COLORSELECTORMOTORDELAY 60 // 60 useconds    (selector motor)
+#define EXTRUDERMOTORDELAY 60 //60//50     // 150 useconds    (controls filament feed speed to the printer)
+#define COLORSELECTORMOTORDELAY 72 // 60 useconds    (selector motor)
 
 //#define SKRMINI
 //#define GT2560
