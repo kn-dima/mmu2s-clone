@@ -32,6 +32,7 @@ int idlerPosCoord[6] = {14, 33, 55, 78, 101, 133};
 int selectorPosCoord[6] = {30, 377, 714, 1066, 1418, 1888};
 
 int loadLengthAfterFinda = 20;
+int extruderFeedLen[5] = {200, 200, 200, 200, 200};
 
 //stepper direction
 #define CW 0
@@ -395,8 +396,27 @@ void checkDebugSerialInterface()
 			toolChangeCycleA();
 			break;
 		case 'C':
-			println_log(F("Processing 'C' Command"));
-			filamentLoadWithBondTechGear();
+			if (kbString[1] == '+')
+			{
+				println_log(F("Increase loading length."));
+				digitalWrite(extruderDirPin, CW); // set the direction of the MMU2 extruder motor
+				delay(1);
+				feedFilament(STEPSPERMM, IGNORE_STOP_AT_EXTRUDER);
+				extruderFeedLen[selectorPos] += 1;
+			}
+			else if (kbString[1] == '-')
+			{
+				println_log(F("Decrease loading length."));
+				digitalWrite(extruderDirPin, CCW); // set the direction of the MMU2 extruder motor
+				delay(1);
+				feedFilament(STEPSPERMM, IGNORE_STOP_AT_EXTRUDER);
+				extruderFeedLen[selectorPos] -= 1;
+			}
+			else
+			{
+				println_log(F("Loading filament"));
+				filamentLoadWithBondTechGear();
+			}
 			break;
 		case 'D':
 			toolChangeCycleD();
@@ -1176,11 +1196,6 @@ loop1:
  *****************************************************/
 bool filamentLoadWithBondTechGear()
 {
-	int i;
-	int delayFactor; // delay factor (in microseconds) for the filament load loop
-	int stepCount;
-	int tSteps;
-
 	// added this code snippet to not process a 'C' command that is essentially a repeat command
 	if (repeatTCmdFlag == ACTIVE)
 	{
@@ -1195,12 +1210,6 @@ bool filamentLoadWithBondTechGear()
 		return false;
 	}
 
-	if ((idlerPos < 0) || (idlerPos > 4))
-	{
-		println_log(F("filamentLoadWithBondTechGear(): fixing current extruder variable"));
-		idlerPos = 0;
-	}
-
 	if (idlerStatus == QUICKPARKED)
 	{
 		quickUnParkIdler();
@@ -1210,24 +1219,12 @@ bool filamentLoadWithBondTechGear()
 		unParkIdler();
 	}
 
-	stepCount = 0;
 	digitalWrite(greenLED, HIGH); // turn on the green LED (for debug purposes)
-
-	// feed the filament from the MMU2 into the bondtech gear
-	tSteps = STEPSPERMM * ((float)LOAD_DURATION / 1000.0) * LOAD_SPEED;			// compute the number of steps to take for the given load duration
-	delayFactor = (float(LOAD_DURATION * 1000.0) / tSteps) - INSTRUCTION_DELAY; // delayFactor algorithm
-
 	digitalWrite(extruderEnablePin, ENABLE); // turn on the extruder stepper motor
 	digitalWrite(extruderDirPin, CW);		 // set extruder stepper motor to push filament towards the mk3
 
-	for (i = 0; i < tSteps; i++)
-	{
-		digitalWrite(extruderStepPin, HIGH); // step the extruder stepper in the MMU2 unit
-		delayMicroseconds(PINHIGH);
-		digitalWrite(extruderStepPin, LOW);
-		delayMicroseconds(delayFactor);
-		++stepCount;
-	}
+	// feed the filament from the MMU2 into the bondtech gear
+	feedFilament(STEPSPERMM * extruderFeedLen[selectorPos], IGNORE_STOP_AT_EXTRUDER);
 	digitalWrite(greenLED, LOW); // turn off the green LED (for debug purposes)
 
 #ifdef DEBUG
@@ -1261,6 +1258,8 @@ void printHelp()
 	println_log(F("'-' - Select previous tool."));
 	println_log(F("'A' - Tool change in cycle."));
 	println_log(F("'C' - Load filament"));
+	println_log(F("'C+' - increase loading length."));
+	println_log(F("'C-' - decrease loading length."));
 	delay(100);
 	println_log(F("'D' - Load and unload all filaments in cycle."));
 	println_log(F("'I0'-'I5' - Move idler to position (5 = park position)."));
@@ -1347,7 +1346,16 @@ void printStatus()
 	  	Serial.print(selectorPosCoord[i]);
 	  	Serial.print(' ');
 	}
+	println_log(' ');
+
+	println_log(F("extruder feed length array"));
+	for (int i = 0; i <= 4; i++)
+	{
+	  	Serial.print(extruderFeedLen[i]);
+	  	Serial.print(' ');
+	}
  	println_log(' ');
+
 	print_log(F("FINDA status: "));
 	int fstatus = digitalRead(findaPin);
 	println_log(fstatus);
