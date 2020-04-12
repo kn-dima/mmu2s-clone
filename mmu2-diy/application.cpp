@@ -59,7 +59,7 @@ char receivedChar;
 boolean newData = false;
 int idlerStatus = INACTIVE;
 int selectorStatus = INACTIVE;
-
+String lastCommand = "Z\r\n";
 /*****************************************************
  *
  * Init the MMU, pin, Serial, ...
@@ -375,6 +375,8 @@ void checkDebugSerialInterface()
 	kbString = ReadSerialStrUntilNewLine();
 	if (kbString == "") return;
 
+	if ((kbString[0] == '\r') || (kbString[0] == '\n')) kbString = lastCommand;
+
 	switch(kbString[0])
 	{
 		case 'A':
@@ -388,16 +390,46 @@ void checkDebugSerialInterface()
 			toolChangeCycleD();
 			break;
 		case 'I':
-			println_log(F("Move idler."));
-			moveIdler(kbString[1] - 0x30);
+			if ((kbString[1] >= '0') && (kbString[1] <= '5'))
+			{
+				println_log(F("Move idler."));
+				moveIdler(kbString[1] - 0x30);
+			}
+			else if (kbString[1] == '+')
+			{
+				println_log(F("Adjust idler position closer."));
+				idlerturnamount(1, CW);
+				idlerPosCoord[idlerPos] += 1;
+			}
+			else if (kbString[1] == '-')
+			{
+				println_log(F("Adjust idler position further."));
+				idlerturnamount(1, CCW);
+				idlerPosCoord[idlerPos] -= 1;
+			}
 			break;
 		case 'P':
 			println_log(F("Park selector and idler"));
 			park();
 			break;
 		case 'S':
-			println_log(F("Move selector."));
-			moveSelector(kbString[1] - 0x30);
+			if ((kbString[1] >= '0') && (kbString[1] <= '5'))
+			{
+				println_log(F("Move selector."));
+				moveSelector(kbString[1] - 0x30);
+			}
+			else if (kbString[1] == '+')
+			{
+				println_log(F("Adjust selector position to right."));
+				csTurnAmount(5, CCW);
+				selectorPosCoord[selectorPos] += 5;
+			}
+			else if (kbString[1] == '-')
+			{
+				println_log(F("Adjust selector position to left."));
+				csTurnAmount(5, CW);
+				selectorPosCoord[selectorPos] -= 5;
+			}
 			break;
 		case 'T':
 			println_log(F("Processing 'T' Command"));
@@ -426,6 +458,7 @@ void checkDebugSerialInterface()
 			printHelp();
 			break;
 	}
+	lastCommand = kbString;
 }
 
 /*****************************************************
@@ -1218,10 +1251,17 @@ void printHelp()
 	println_log(F("Available commands:"));
 	println_log(F("'A' - Tool change in cycle."));
 	println_log(F("'C' - Load filament"));
+	delay(100);
 	println_log(F("'D' - Load and unload all filaments in cycle."));
 	println_log(F("'I0'-'I5' - Move idler to position (5 = park position)."));
+	println_log(F("'I+' - Adjust idler position for current slot one step close to selector."));
+	println_log(F("'I-' - Adjust idler position for current slot one step further from selector."));
+	delay(100);
 	println_log(F("'P' - Park idler and selector. Last one only if no filament in sensor."));
 	println_log(F("'S0'-'S5' - Move selector to position (5 = park position)."));
+	println_log(F("'S+' - Adjust selector position five steps right."));
+	println_log(F("'S-' - Adjust selector position five steps left."));
+	delay(100);
 	println_log(F("'T0'-'T4' - Tool change."));
 	println_log(F("'U' - Unload filament"));
 	println_log(F("'Z' - Status"));
@@ -1288,6 +1328,21 @@ void toolChangeCycleD()
 
 void printStatus()
 {
+	println_log(F("idler positions array"));
+	for (int i = 0; i <= 5; i++)
+	{
+	  	Serial.print(idlerPosCoord[i]);
+	  	Serial.print(' ');
+	}
+ 	println_log(' ');
+
+	println_log(F("selector positions array"));
+	for (int i = 0; i <= 5; i++)
+	{
+	  	Serial.print(selectorPosCoord[i]);
+	  	Serial.print(' ');
+	}
+ 	println_log(' ');
 	print_log(F("FINDA status: "));
 	int fstatus = digitalRead(findaPin);
 	println_log(fstatus);
