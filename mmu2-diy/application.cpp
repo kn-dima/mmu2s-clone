@@ -809,7 +809,7 @@ bool isFilamentLoadedtoExtruder()
  * Load the Filament using the FINDA and go back to MMU
  * 
  *****************************************************/
-void loadFilamentToFinda()
+bool loadFilamentToFinda()
 {
 	unsigned long startTime, currentTime;
 
@@ -823,8 +823,8 @@ loop:
 	currentTime = millis();
 	if ((currentTime - startTime) > 10000)
 	{ // 10 seconds worth of trying to load the filament
-		fixTheProblem("UNLOAD FILAMENT ERROR:   timeout error, filament is not loaded to the FINDA sensor");
-		startTime = millis(); // reset the start time clock
+		println_log(F("loadFilamentToFinda ERROR:   timeout error, filament is not loaded to the FINDA sensor"));
+		return false;
 	}
 
 	// go 144 steps (1 mm) and then check the finda status
@@ -833,12 +833,7 @@ loop:
 	// keep feeding the filament until the pinda sensor triggers
 	if (!isFilamentLoadedPinda())
 		goto loop;
-	//
-	// for a filament load ... need to get the filament out of the selector head !!
-	//
-	digitalWrite(extruderDirPin, CCW); // back the filament away from the selector
-	// after hitting the FINDA sensor, back away by UNLOAD_LENGTH_BACK_COLORSELECTOR mm
-	feedFilament(STEPSPERMM * UNLOAD_LENGTH_BACK_COLORSELECTOR, IGNORE_STOP_AT_EXTRUDER);
+	return true;
 }
 
 /*****************************************************
@@ -1426,7 +1421,10 @@ bool loadFilament()
 		println_log(F("loadFilament error: already loaded."));
 		return false;
 	}
-	loadFilamentToFinda();
+	if (!loadFilamentToFinda())
+	{
+		return false;
+	}
 	feedFilament(STEPSPERMM * loadLengthAfterFinda, IGNORE_STOP_AT_EXTRUDER);
 	return true;
 }

@@ -23,7 +23,7 @@ extern void activateColorSelector();
 extern void deActivateColorSelector();
 extern void moveIdler(int newPos);
 extern void moveSelector(int newPos);
-extern void loadFilamentToFinda();
+extern bool loadFilamentToFinda();
 extern void fixTheProblem(String statement);
 extern void csTurnAmount(int steps, int direction);
 extern void feedFilament(unsigned int steps, int stoptoextruder);
