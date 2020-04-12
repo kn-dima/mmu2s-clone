@@ -393,6 +393,10 @@ void checkDebugSerialInterface()
 			case 'D':
 			    toolChangeCycleD();
 				break;
+			case 'P':
+				println_log(F("Park selector and idler"));
+				park();
+				break;
 			case 'T':
 				println_log(F("Processing 'T' Command"));
 				if ((kbString[1] >= '0') && (kbString[1] <= '4'))
@@ -1318,6 +1322,7 @@ void printHelp()
 	println_log(F("'A' - Tool change in cycle."));
 	println_log(F("'C' - Load filament"));
 	println_log(F("'D' - Load and unload all filaments in cycle."));
+	println_log(F("'P' - Park idler and selector. Last one only if no filament in sensor."));
 	println_log(F("'T0'-'T4' - Tool change."));
 	println_log(F("'U' - Unload filament"));
 	println_log(F("'Z' - Status"));
@@ -1406,6 +1411,21 @@ void printStatus()
 		}
 	}
 }
+
+void park()
+{
+	initIdlerPosition();								   // reset the roller bearing position
+
+	if (!isFilamentLoadedPinda())
+	{
+		initColorSelector(); // reset the color selector if there is NO filament present
+	}
+	else
+	{
+		println_log(F("Unable to park selector, please remove filament"));
+	}
+}
+
 /************************************************************************************************************/
 /************************************************************************************************************/
 /************************************************************************************************************/

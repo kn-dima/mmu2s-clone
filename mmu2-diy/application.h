@@ -33,6 +33,7 @@ extern void printHelp();
 extern void printStatus();
 extern void toolChangeCycleA();
 extern void toolChangeCycleD();
+extern void park();
 
 class Application
 {
