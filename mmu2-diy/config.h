@@ -18,9 +18,6 @@
 
 #define TIMEOUT_LOAD_UNLOAD 20000
 
-// changed from 125 to 115 (10.13.18)
-#define MAXIDLERTRAVEL 125         // number of steps that the roller bearing stepper motor can travel
-
 #define FULL_STEP  1u
 #define HALF_STEP  2u
 #define QUARTER_STEP 4u
@@ -66,19 +63,7 @@
 
 // Distance to restract the filament into the MMU 
 #define UNLOAD_LENGTH_BACK_COLORSELECTOR 30
-//
-int IDLEROFFSET[5] = {0,0,0,0,0};
-#define IDLERSTEPSIZE 25         // steps to each roller bearing
 
-
-
-// changed position #2 to 372  (still tuning this little sucker)
-
-#define MAXSELECTOR_STEPS   1800//1890   // maximum number of selector stepper motor (used to move all the way to the right or left
-int CSOFFSET[5] = {30,30,0,-15,-30};
-#define CSSTEPS 357
-#define CS_RIGHT_FORCE 20
-#define CS_RIGHT_FORCE_SELECTOR_0 5
 
 //*************************************************************************************************
 //  Delay values for each stepper motor

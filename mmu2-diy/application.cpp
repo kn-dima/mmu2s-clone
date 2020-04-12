@@ -24,9 +24,12 @@ IOPrint ioprint;
 int command = 0;
 
 // absolute position of bearing stepper motor
-int idlerPosCoord[6] = {0 + IDLEROFFSET[0], IDLERSTEPSIZE + IDLEROFFSET[1], IDLERSTEPSIZE * 2 + IDLEROFFSET[2], IDLERSTEPSIZE * 3 + IDLEROFFSET[3], IDLERSTEPSIZE * 4 + IDLEROFFSET[4], MAXIDLERTRAVEL};
+// this line calibrated for my unit
+int idlerPosCoord[6] = {14, 33, 55, 78, 101, 133};
+
 // absolute position of selector stepper motor
-int selectorPosCoord[6] = {0 + CSOFFSET[0], CSSTEPS * 1 + CSOFFSET[1], CSSTEPS * 2 + CSOFFSET[2], CSSTEPS * 3 + CSOFFSET[3], CSSTEPS * 4 + CSOFFSET[4], MAXSELECTOR_STEPS};
+// this line calibrated for my unit with cutted T8 POM nut instead of Prusa nut
+int selectorPosCoord[6] = {30, 377, 714, 1066, 1418, 1888};
 
 //stepper direction
 #define CW 0
@@ -40,7 +43,7 @@ int selectorPosCoord[6] = {0 + CSOFFSET[0], CSSTEPS * 1 + CSOFFSET[1], CSSTEPS *
 #define STOP_AT_EXTRUDER 1
 #define IGNORE_STOP_AT_EXTRUDER 0
 
-int trackToolChanges = 0;
+//int trackToolChanges = 0;
 int extruderMotorStatus = INACTIVE;
 
 int repeatTCmdFlag = INACTIVE; // used by the 'C' command processor to avoid processing multiple 'C' commands
@@ -53,13 +56,14 @@ int idlerPos = 0;
 int firstTimeFlag = 0;
 int earlyCommands = 0; // forcing communications with the mk3 at startup
 
-int toolChangeCount = 0;
+//int toolChangeCount = 0;
 
 char receivedChar;
 boolean newData = false;
 int idlerStatus = INACTIVE;
 int selectorStatus = INACTIVE;
 String lastCommand = "Z\r\n";
+
 /*****************************************************
  *
  * Init the MMU, pin, Serial, ...
@@ -620,8 +624,8 @@ void initColorSelector()
 
 	digitalWrite(colorSelectorEnablePin, ENABLE);		   // turn on the stepper motor
 	delay(1);											   // wait for 1 millisecond
-	csTurnAmount(MAXSELECTOR_STEPS, CW);                   // move to the left
-	csTurnAmount(MAXSELECTOR_STEPS + CS_RIGHT_FORCE, CCW); // move all the way to the right
+	csTurnAmount(selectorPosCoord[5], CW);                   // move to the left
+	csTurnAmount(selectorPosCoord[5], CCW); // move all the way to the right
 	digitalWrite(colorSelectorEnablePin, DISABLE);		   // turn off the stepper motor
 	selectorPos = 5;
 }
@@ -634,23 +638,16 @@ void initColorSelector()
  *****************************************************/
 void syncColorSelector()
 {
-	int moveSteps;
-
 	digitalWrite(colorSelectorEnablePin, ENABLE); // turn on the selector stepper motor
 	delay(1);									  // wait for 1 millecond
 
 	print_log(F("syncColorSelelector()   current Filament selection: "));
 	println_log(selectorPos);
 
-	moveSteps = MAXSELECTOR_STEPS - selectorPosCoord[selectorPos];
-
-	print_log(F("syncColorSelector()   moveSteps: "));
-	println_log(moveSteps);
-
-	csTurnAmount(moveSteps, CCW);						   // move all the way to the right
-	csTurnAmount(MAXSELECTOR_STEPS + CS_RIGHT_FORCE, CW); // move all the way to the left
-														   //FIXME : turn off motor ???
-														   //digitalWrite(colorSelectorEnablePin, DISABLE); // turn off the stepper motor
+	csTurnAmount(selectorPosCoord[selectorPos], CW);	// move all the way to the left
+	csTurnAmount(selectorPosCoord[5], CCW); 			// move all the way to the right
+														//FIXME : turn off motor ???
+														//digitalWrite(colorSelectorEnablePin, DISABLE); // turn off the stepper motor
 }
 
 /***************************************************************************************************************
@@ -672,8 +669,8 @@ void initIdlerPosition()
 
 	digitalWrite(idlerEnablePin, ENABLE); // turn on the roller bearing motor
 	delay(1);
-	idlerturnamount(MAXIDLERTRAVEL, CCW);
-	idlerturnamount(MAXIDLERTRAVEL, CW); // move the bearings out of the way
+	idlerturnamount(idlerPosCoord[5], CCW);
+	idlerturnamount(idlerPosCoord[5], CW); // move the bearings out of the way
 	digitalWrite(idlerEnablePin, DISABLE); // turn off the idler roller bearing motor
 	idlerPos = 5;
 }
@@ -686,8 +683,6 @@ void initIdlerPosition()
  *****************************************************/
 void moveIdler(int newPos)
 {
-
-
 	if ((newPos < 0) || (newPos > 5))
 	{
 		println_log(F("moveIdler() ERROR, invalid filament selection"));
@@ -910,13 +905,14 @@ loop:
  *****************************************************/
 void parkIdler()
 {
+	return;
 	int newSetting;
 
 	digitalWrite(idlerEnablePin, ENABLE);
 	delay(1);
 
-	newSetting = MAXIDLERTRAVEL - idlerCoord;
-	idlerCoord = MAXIDLERTRAVEL; // record the current roller status  (CSK)
+	newSetting = idlerPosCoord[5] - idlerCoord;
+	idlerCoord = idlerPosCoord[5]; // record the current roller status  (CSK)
 
 	idlerturnamount(newSetting, CW); // move the bearing roller out of the way
 	idlerStatus = INACTIVE;
@@ -931,12 +927,13 @@ void parkIdler()
  *****************************************************/
 void unParkIdler()
 {
+	return;
 	int rollerSetting;
 
 	digitalWrite(idlerEnablePin, ENABLE); // turn on (enable) the roller bearing motor
 	delay(1);							  // wait for 10 useconds
 
-	rollerSetting = MAXIDLERTRAVEL - idlerPosCoord[selectorPos];
+	rollerSetting = idlerPosCoord[5] - idlerPosCoord[selectorPos];
 	idlerCoord = idlerPosCoord[selectorPos]; // update the idler bearing position
 
 	idlerturnamount(rollerSetting, CCW); // restore the old position
@@ -953,10 +950,11 @@ void unParkIdler()
  *****************************************************/
 void quickParkIdler()
 {
-
+	return;
+	/* 
 	digitalWrite(idlerEnablePin, ENABLE); // turn on the idler stepper motor
 	delay(1);
-
+	
 	idlerturnamount(IDLERSTEPSIZE, CW);
 
 	idlerCoord = idlerCoord + IDLERSTEPSIZE; // record the current position of the IDLER bearing
@@ -965,6 +963,7 @@ void quickParkIdler()
 	//FIXME : Turn off idler ?
 	//digitalWrite(idlerEnablePin, DISABLE);    // turn off the roller bearing stepper motor  (nice to do, cuts down on CURRENT utilization)
 	digitalWrite(extruderEnablePin, DISABLE); // turn off the extruder stepper motor as well
+	*/
 }
 
 /*****************************************************
@@ -975,6 +974,8 @@ void quickParkIdler()
  *****************************************************/
 void quickUnParkIdler()
 {
+	return;
+	/*
 	int rollerSetting;
 
 	rollerSetting = idlerCoord - IDLERSTEPSIZE; // go back IDLERSTEPSIZE units (hopefully re-enages the bearing
@@ -987,6 +988,7 @@ void quickUnParkIdler()
 	idlerCoord = rollerSetting - IDLERSTEPSIZE; // keep track of the idler position
 
 	idlerStatus = ACTIVE; // mark the idler as active
+	*/
 }
 
 /***************************************************************************************************************
@@ -1004,11 +1006,11 @@ void quickUnParkIdler()
  *****************************************************/
 void toolChange(int newPos)
 {
-	++toolChangeCount; // count the number of tool changes
-	++trackToolChanges;
+	//++toolChangeCount; // count the number of tool changes
+	//++trackToolChanges;
 
-	print_log(F("Tool Change Count: "));
-	println_log(toolChangeCount);
+	//print_log(F("Tool Change Count: "));
+	//println_log(toolChangeCount);
 
 	if (newPos == selectorPos)
 	{ // already at the correct filament selection
@@ -1042,14 +1044,14 @@ void toolChange(int newPos)
 		}
 
 		// reset the color selector stepper motor (gets out of alignment)
-		if (trackToolChanges > TOOLSYNC)
+		/*if (trackToolChanges > TOOLSYNC)
 		{
 			println_log(F("toolChange: Synchronizing the Filament Selector Head"));
 			syncColorSelector();
 			//FIXME : add syncIdlerSelector here
 			activateColorSelector(); // turn the color selector motor back on
 			trackToolChanges = 0;
-		}
+		}*/
 #ifdef DEBUG
 		println_log(F("toolChange: Selecting the proper Idler Location"));
 #endif
@@ -1063,7 +1065,6 @@ void toolChange(int newPos)
 #endif
 		filamentLoadToMK3(); // moves the idler and loads the filament
 		selectorPos = newPos;
-		idlerPos = newPos;
 		quickParkIdler();
 	}
 } // end of ToolChange processing
