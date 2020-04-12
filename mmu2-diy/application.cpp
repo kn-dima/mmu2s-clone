@@ -184,20 +184,17 @@ void Application::loop()
 String ReadSerialStrUntilNewLine()
 {
 	String str = "";
-	char c = -1;
+	char c;
 	while (Serial.available())
 	{
 		c = char(Serial.read());
-		if ((c == '\n') || (c == '\r'))
-		{
-			if (str != "") return str;
-		}
-		else
-		{
-			str += c;
-		}
+		str += c;
 	}
-	return str;
+	if ((c == '\n') || (c == '\r'))
+	{
+		return str;
+	}
+	return "";
 }
 
 /*****************************************************
@@ -377,57 +374,59 @@ void checkDebugSerialInterface()
 {
 	String kbString;
 
-	if (Serial.available())
-	{
-		kbString = ReadSerialStrUntilNewLine();
+	kbString = ReadSerialStrUntilNewLine();
+	if (kbString == "") return;
 
-		switch(kbString[0])
-		{
-			case 'A':
-			    toolChangeCycleA();
-				break;
-			case 'C':
-				println_log(F("Processing 'C' Command"));
-				filamentLoadWithBondTechGear();
-				break;
-			case 'D':
-			    toolChangeCycleD();
-				break;
-			case 'P':
-				println_log(F("Park selector and idler"));
-				park();
-				break;
-			case 'T':
-				println_log(F("Processing 'T' Command"));
-				if ((kbString[1] >= '0') && (kbString[1] <= '4'))
-				{
-					toolChange(kbString[1]);
-				}
-				else
-				{
-					println_log(F("T: Invalid filament Selection"));
-				}
-				break;
-			case 'U':
-				println_log(F("Processing 'U' Command"));
-				if (idlerStatus == QUICKPARKED)
-				{
-					quickUnParkIdler(); // un-park the idler from a quick park
-				}
-				if (idlerStatus == INACTIVE)
-				{
-					unParkIdler(); // turn on the idler motor
-				}
-				unloadFilamentToFinda(); //unload the filament
-				parkIdler();			 // park the idler motor and turn it off
-				break;
-			case 'Z':
-				printStatus();
-				break;
-			default:
-				printHelp();
-				break;
-		}
+	switch(kbString[0])
+	{
+		case 'A':
+			toolChangeCycleA();
+			break;
+		case 'C':
+			println_log(F("Processing 'C' Command"));
+			filamentLoadWithBondTechGear();
+			break;
+		case 'D':
+			toolChangeCycleD();
+			break;
+		case 'I':
+			println_log(F("Move idler."));
+			moveIdler(kbString[1]);
+			break;
+		case 'P':
+			println_log(F("Park selector and idler"));
+			park();
+			break;
+		case 'S':
+			println_log(F("Move selector."));
+			moveSelector(kbString[1]);
+			break;
+		case 'T':
+			println_log(F("Processing 'T' Command"));
+			if ((kbString[1] >= '0') && (kbString[1] <= '4'))
+			{
+				toolChange(kbString[1]);
+			}
+			break;
+		case 'U':
+			println_log(F("Processing 'U' Command"));
+			if (idlerStatus == QUICKPARKED)
+			{
+				quickUnParkIdler(); // un-park the idler from a quick park
+			}
+			if (idlerStatus == INACTIVE)
+			{
+				unParkIdler(); // turn on the idler motor
+			}
+			unloadFilamentToFinda(); //unload the filament
+			parkIdler();			 // park the idler motor and turn it off
+			break;
+		case 'Z':
+			printStatus();
+			break;
+		default:
+			printHelp();
+			break;
 	}
 }
 
@@ -1322,7 +1321,9 @@ void printHelp()
 	println_log(F("'A' - Tool change in cycle."));
 	println_log(F("'C' - Load filament"));
 	println_log(F("'D' - Load and unload all filaments in cycle."));
+	println_log(F("'I0'-'I4' - Move idler to position."));
 	println_log(F("'P' - Park idler and selector. Last one only if no filament in sensor."));
+	println_log(F("'S0'-'S4' - Move selector to position."));
 	println_log(F("'T0'-'T4' - Tool change."));
 	println_log(F("'U' - Unload filament"));
 	println_log(F("'Z' - Status"));
@@ -1404,9 +1405,9 @@ void printStatus()
 		isFilamentLoadedPinda() ? print_log(F("ON    | ")) : print_log(F("OFF   | "));
 		isFilamentLoadedtoExtruder() ? println_log(F("ON")) : println_log(F("OFF"));
 		delay(200);
-		if (Serial.available())
-		{
-			ReadSerialStrUntilNewLine();
+		String str = ReadSerialStrUntilNewLine();
+		if (str != "")
+		{ 
 			break;
 		}
 	}
