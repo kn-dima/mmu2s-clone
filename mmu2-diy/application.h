@@ -17,7 +17,7 @@ extern void toolChange(int newPos);
 extern void quickParkIdler();
 extern void quickUnParkIdler();
 extern void unParkIdler();
-extern void unloadFilamentToFinda();
+extern bool unloadFilament();
 extern void parkIdler();
 extern void activateColorSelector();
 extern void deActivateColorSelector();

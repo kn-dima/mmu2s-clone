@@ -272,7 +272,7 @@ void checkSerialInterface()
 			}
 			if ((c2 >= '0') && (c2 <= '4'))
 			{
-				unloadFilamentToFinda();
+				unloadFilament();
 				parkIdler();
 				println_log(F("U: Sending Filament Unload Acknowledge to MK3"));
 				delay(200);
@@ -463,7 +463,7 @@ void checkDebugSerialInterface()
 			{
 				unParkIdler(); // turn on the idler motor
 			}
-			unloadFilamentToFinda(); //unload the filament
+			unloadFilament(); //unload the filament
 			parkIdler();			 // park the idler motor and turn it off
 			break;
 		case 'Z':
@@ -846,14 +846,14 @@ loop:
  * unload Filament using the FINDA sensor and push it in the MMU
  * 
  *****************************************************/
-void unloadFilamentToFinda()
+bool unloadFilament()
 {
 	unsigned long startTime, currentTime, startTime1;
 	// if the filament is already unloaded, do nothing
 	if (!isFilamentLoadedPinda())
 	{
 		println_log(F("unloadFilamentToFinda():  filament already unloaded"));
-		return;
+		return true;
 	}
 
 	digitalWrite(extruderEnablePin, ENABLE); // turn on the extruder motor
@@ -873,8 +873,8 @@ loop:
 		// filament Switch is still ON, check for timeout condition
 		if ((currentTime - startTime1) > 2000)
 		{ // has 2 seconds gone by ?
-			fixTheProblem("unloadFilamentToFinda(): UNLOAD FILAMENT ERROR: filament not unloading properly, stuck in mk3 head");
-			startTime1 = millis();
+			println_log(F("unloadFilamentToFinda(): UNLOAD FILAMENT ERROR: filament not unloading properly, stuck in mk3 head"));
+			return false;
 		}
 	}
 	else
@@ -883,8 +883,8 @@ loop:
 		if ((currentTime - startTime) > TIMEOUT_LOAD_UNLOAD)
 		{
 			// 10 seconds worth of trying to unload the filament
-			fixTheProblem("unloadFilamentToFinda(): UNLOAD FILAMENT ERROR: filament is not unloading properly, stuck between mk3 and mmu2");
-			startTime = millis(); // reset the start time
+			println_log(F("unloadFilamentToFinda(): UNLOAD FILAMENT ERROR: filament is not unloading properly, stuck between mk3 and mmu2"));
+			return false;
 		}
 	}
 
@@ -899,6 +899,7 @@ loop:
 	// back the filament away from the selector by UNLOAD_LENGTH_BACK_COLORSELECTOR mm
 	digitalWrite(extruderDirPin, CCW);
 	feedFilament(STEPSPERMM * UNLOAD_LENGTH_BACK_COLORSELECTOR, IGNORE_STOP_AT_EXTRUDER);
+	return true;
 }
 
 /***************************************************************************************************************
@@ -1051,7 +1052,7 @@ void toolChange(int newPos)
 			println_log(F("toolChange: Unloading filament"));
 
 			moveIdler(selectorPos); // point to the current extruder
-			unloadFilamentToFinda();		// have to unload the filament first
+			unloadFilament();		// have to unload the filament first
 		}
 
 		// reset the color selector stepper motor (gets out of alignment)
@@ -1316,7 +1317,7 @@ void toolChangeCycleA()
 	{
 		unParkIdler(); // turn on the idler motor
 	}
-	unloadFilamentToFinda(); //unload the filament
+	unloadFilament(); //unload the filament
 	parkIdler();			 // park the idler motor and turn it off
 }
 
@@ -1330,7 +1331,7 @@ void toolChangeCycleD()
 		moveIdler(i);
 		moveSelector(i);
 		filamentLoadToMK3();
-		unloadFilamentToFinda();
+		unloadFilament();
 		delay(5000);
 	}
 }
