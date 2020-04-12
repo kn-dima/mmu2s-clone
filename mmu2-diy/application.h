@@ -34,6 +34,8 @@ extern void printStatus();
 extern void toolChangeCycleA();
 extern void toolChangeCycleD();
 extern void park();
+extern void prevTool();
+extern void nextTool();
 
 class Application
 {

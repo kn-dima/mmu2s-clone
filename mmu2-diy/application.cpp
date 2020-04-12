@@ -383,6 +383,12 @@ void checkDebugSerialInterface()
 
 	switch(kbString[0])
 	{
+		case '-':
+			prevTool();
+			break;
+		case '+':
+			nextTool();
+			break;
 		case 'A':
 			toolChangeCycleA();
 			break;
@@ -1250,6 +1256,8 @@ bool filamentLoadWithBondTechGear()
 void printHelp()
 {
 	println_log(F("Available commands:"));
+	println_log(F("'+' - Select next tool."));
+	println_log(F("'-' - Select previous tool."));
 	println_log(F("'A' - Tool change in cycle."));
 	println_log(F("'C' - Load filament"));
 	delay(100);
@@ -1270,7 +1278,7 @@ void printHelp()
 
 void toolChangeCycleA()
 {
-	println_log(F("Processing 'A' Command"));
+	println_log(F("Processing 'A' Command. Tool change in cycle."));
 	println_log(F("initColorSelector"));
 	initColorSelector();
 	println_log(F("initIdlerPosition"));
@@ -1308,17 +1316,11 @@ void toolChangeCycleA()
 
 void toolChangeCycleD()
 {
-	println_log(F("Processing 'D' Command"));
-	println_log(F("initColorSelector"));
-	initColorSelector();
-	println_log(F("initIdlerPosition"));
-	initIdlerPosition();
-	char colors[5] = {'0', '1', '2', '3', '4'};
+	println_log(F("Processing 'D' Command. Load and unload all filaments in cycle."));
 	for (int i = 0; i < 5; i++)
 	{
-		char c = colors[i];
-		print_log(F("Color "));
-		println_log(c);
+		print_log(F("Slot "));
+		println_log(i);
 		moveIdler(i);
 		moveSelector(i);
 		filamentLoadToMK3();
@@ -1378,6 +1380,30 @@ void park()
 	else
 	{
 		println_log(F("Unable to park selector, please remove filament"));
+	}
+}
+
+void prevTool()
+{
+	if (selectorPos == 0)
+	{
+		toolChange(4);
+	}
+	else
+	{
+		toolChange(selectorPos - 1);
+	}
+}
+
+void nextTool()
+{
+	if (selectorPos >= 4)
+	{
+		toolChange(0);
+	}
+	else
+	{
+		toolChange(selectorPos + 1);
 	}
 }
 
