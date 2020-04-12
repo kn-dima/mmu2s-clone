@@ -588,10 +588,6 @@ loop:
 
 	int oldCoord = selectorPosCoord[selectorPos];
 	int newCoord = selectorPosCoord[newPos];
-	print_log(F("colorSelector():  oldCoord:"));
-	println_log(oldCoord);
-	print_log(F("colorSelector():  newCoord:"));
-	println_log(newCoord);
 	if (newCoord >= oldCoord)
 	{
 		csTurnAmount((newCoord - oldCoord), CCW);

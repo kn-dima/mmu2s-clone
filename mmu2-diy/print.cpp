@@ -21,7 +21,7 @@ void IOPrint::setup()
 #ifdef SERIAL_DEBUG
     Serial.begin(250000); // startup the local serial interface (changed to 2 Mbaud on 10.7.18
 #ifdef SERIAL_DEBUG_WAIT_FOR_PORT
-     while (!Serial)
+    while (!Serial)
     {
         delay(200); // wait for serial port to connect. needed for native USB port only
         Serial.println(F("waiting for serial port"));

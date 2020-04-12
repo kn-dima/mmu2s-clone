@@ -54,15 +54,6 @@
 #define PINHIGH 10                    // how long to hold stepper motor pin high in microseconds
 #define PINLOW  10                    // how long to hold stepper motor pin low in microseconds
 
-
-
-// the MMU2 currently runs at 21mm/sec (set by Slic3r) for 2 seconds (good stuff to know)
-//
-// the load duration was chagned from 1 second to 1.1 seconds on 10.8.18 (as an experiment)
-// increased from 1.1 to 1.5 seconds on 10.13.18 (another experiment)
-//1600
-#define LOAD_DURATION 1000                 // duration of 'C' command during the load process (in milliseconds)
-// changed from 21 mm/sec to 30 mm/sec on 10.13.18
 #define LOAD_SPEED 30                   // load speed (in mm/second) during the 'C' command (determined by Slic3r setting)
 #define INSTRUCTION_DELAY 25          // delay (in microseconds) of the loop
 #define FILAMENT_TO_MK3_C0_WAIT_TIME 2000
@@ -80,7 +71,6 @@
 
 //#define SKRMINI
 //#define GT2560
-
 
 #define filamentSwitchON 0
 //#define FILAMENTSWITCH_BEFORE_EXTRUDER // turn on if the filament switch is before the extruder, turn off for the mk3s-mmu filament switch
@@ -152,7 +142,6 @@
 // modified code on 10.2.18 to accomodate RAMPS 1.6 board mapping
 //
 
-
 //PIN X
 #define colorSelectorStepPin PC6
 #define colorSelectorDirPin  PC7 //color selector stepper motor (driven by trapezoidal screw)
@@ -163,12 +152,10 @@
 #define idlerDirPin  PB14
 #define idlerEnablePin PB12
 
-
 // PIN E
 #define extruderStepPin  PC5 
 #define extruderDirPin  PB0 
 #define extruderEnablePin PC4
-
 
 //BROWN = +5V
 //BLUE = GND
