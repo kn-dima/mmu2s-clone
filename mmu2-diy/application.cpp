@@ -1314,15 +1314,19 @@ void toolChangeCycleA()
 void toolChangeCycleD()
 {
 	println_log(F("Processing 'D' Command. Load and unload all filaments in cycle."));
+	int cnt = 0;
+	while(1)
 	for (int i = 0; i < 5; i++)
 	{
-		print_log(F("Slot "));
-		println_log(i);
 		moveIdler(i);
 		moveSelector(i);
-		filamentLoadToMK3();
-		unloadFilament();
-		delay(5000);
+		if (!loadFilament()) return;
+		filamentLoadWithBondTechGear();
+		//filamentLoadToMK3();
+		if (!unloadFilament()) return;
+		print_log(F("Cycles count = "));
+		println_log(++cnt);
+		//delay(5000);
 	}
 }
 
