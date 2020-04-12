@@ -31,6 +31,8 @@ int idlerPosCoord[6] = {14, 33, 55, 78, 101, 133};
 // this line calibrated for my unit with cutted T8 POM nut instead of Prusa nut
 int selectorPosCoord[6] = {30, 377, 714, 1066, 1418, 1888};
 
+int loadLengthAfterFinda = 20;
+
 //stepper direction
 #define CW 0
 #define CCW 1
@@ -417,6 +419,9 @@ void checkDebugSerialInterface()
 				idlerturnamount(1, CCW);
 				idlerPosCoord[idlerPos] -= 1;
 			}
+			break;
+		case 'L':
+			loadFilament();
 			break;
 		case 'P':
 			println_log(F("Park selector and idler"));
@@ -1265,6 +1270,7 @@ void printHelp()
 	println_log(F("'I0'-'I5' - Move idler to position (5 = park position)."));
 	println_log(F("'I+' - Adjust idler position for current slot one step close to selector."));
 	println_log(F("'I-' - Adjust idler position for current slot one step further from selector."));
+	println_log(F("'L' - Load filament to finda and feed to selector edge."));
 	delay(100);
 	println_log(F("'P' - Park idler and selector. Last one only if no filament in sensor."));
 	println_log(F("'S0'-'S5' - Move selector to position (5 = park position)."));
@@ -1405,6 +1411,23 @@ void nextTool()
 	{
 		toolChange(selectorPos + 1);
 	}
+}
+
+bool loadFilament()
+{
+	if ((selectorPos < 0) || (selectorPos > 4) || (selectorPos != idlerPos))
+	{
+		println_log(F("loadFilament error: wrong selector or idler position."));
+		return false;
+	}
+	if (isFilamentLoadedPinda())
+	{
+		println_log(F("loadFilament error: already loaded."));
+		return false;
+	}
+	loadFilamentToFinda();
+	feedFilament(STEPSPERMM * loadLengthAfterFinda, IGNORE_STOP_AT_EXTRUDER);
+	return true;
 }
 
 /************************************************************************************************************/
