@@ -9,7 +9,13 @@
 
 #define MMU2_VERSION "5.0  10/11/19"
 
-#define STEPSPERMM  144ul           // these are the number of steps required to travel 1 mm using the extruder motor
+//#define STEPSPERMM  144ul           // these are the number of steps required to travel 1 mm using the extruder motor
+// real travel (calculated at 200 mm)
+//SBS  167/200 = 0,835
+//PLA  162/200 = 0,81
+//FLEX 164/200 = 0,82
+//ABS  169/200 = 0,845
+#define STEPSPERMM  177l           // these are the number of steps required to travel 1 mm using the extruder motor
 
 #define S1_WAIT_TIME 10  //wait time for serial 1 (mmu<->printer)
 
