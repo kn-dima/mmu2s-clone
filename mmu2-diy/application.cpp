@@ -32,7 +32,7 @@ int idlerPosCoord[6] = {14, 33, 55, 78, 101, 133};
 int selectorPosCoord[6] = {30, 377, 714, 1066, 1418, 1888};
 
 int loadLengthAfterFinda = 20;
-int extruderFeedLen[5] = {200, 200, 200, 200, 200};
+int extruderFeedLen[5] = {600, 600, 600, 600, 600};
 
 //stepper direction
 #define CW 0
@@ -53,6 +53,7 @@ int repeatTCmdFlag = INACTIVE; // used by the 'C' command processor to avoid pro
 
 int idlerCoord = 0; // this tracks the roller bearing position (top motor on the MMU)
 int selectorPos = 0;  // keep track of filament selection (0,1,2,3,4))
+int ejectPos = 0; // store ejected filament position for 'R' command
 int dummy[100];
 int idlerPos = 0;
 
@@ -236,88 +237,47 @@ void checkSerialInterface()
 		// Commands still to be implemented:
 		// X0 (MMU Reset)
 		// F0 (Filament type select),
-		// E0->E4 (Eject Filament)
-		// R0 (recover from eject)
 		//***********************************************************************************
 		switch (c1)
 		{
 		case 'T':
-			// request for idler and selector based on filament number
-			if ((c2 >= '0') && (c2 <= '4'))
+			if (toolChange(c2 - 0x30))
 			{
-				toolChange(c2 - 0x30);
-			}
-			else
-			{
-				println_log(F("T: Invalid filament Selection"));
-			}
-
-			Serial1.print(F("ok\n")); // send command acknowledge back to mk3 controller
-			break;
-		case 'C':
-			// move filament from selector ALL the way to printhead
-			if (filamentLoadWithBondTechGear())
-				Serial1.print(F("ok\n"));
-			break;
-
-		case 'U':
-			// request for filament unload
-			println_log(F("U: Filament Unload Selected"));
-			if (idlerStatus == QUICKPARKED)
-			{
-				quickUnParkIdler(); // un-park the idler from a quick park
-			}
-			if (idlerStatus == INACTIVE)
-			{
-				unParkIdler(); // turn on the idler motor
-			}
-			if ((c2 >= '0') && (c2 <= '4'))
-			{
-				unloadFilament();
-				parkIdler();
-				println_log(F("U: Sending Filament Unload Acknowledge to MK3"));
-				delay(200);
-				Serial1.print(F("ok\n"));
-			}
-			else
-			{
-				println_log(F("U: Invalid filament Unload Requested"));
-				delay(200);
-				Serial1.print(F("ok\n"));
+				Serial1.print(F("ok\n")); // send command acknowledge back to mk3 controller
 			}
 			break;
 		case 'L':
-			// request for filament load
-			println_log(F("L: Filament Load Selected"));
-			if (idlerStatus == QUICKPARKED)
-			{
-				quickUnParkIdler(); // un-park the idler from a quick park
-			}
-			if (idlerStatus == INACTIVE)
-			{
-				unParkIdler(); // turn on the idler motor
-			}
-			if (selectorStatus == INACTIVE)
-				activateColorSelector(); // turn on the color selector motor
-			if ((c2 >= '0') && (c2 <= '4'))
-			{
-				println_log(F("L: Moving the bearing idler"));
-				moveIdler(c2 - 0x30); // move the filament selector stepper motor to the right spot
-				println_log(F("L: Moving the color selector"));
-				moveSelector(c2 - 0x30); // move the color Selector stepper Motor to the right spot
-				println_log(F("L: Loading the Filament"));
-				loadFilamentToFinda();
-				parkIdler(); // turn off the idler roller
-				println_log(F("L: Sending Filament Load Acknowledge to MK3"));
-				delay(200);
+			if (loadToFindaAndUnloadFromSelector(c2 - 0x30))
 				Serial1.print(F("ok\n"));
+			break;
+		case 'M':
+			//todo: M command
+			//! M0 set TMC2130 to normal mode
+			//! M1 set TMC2130 to stealth mode
+			//response "ok\n"
+			break;
+		case 'U':
+			if (unloadFilament())
+			{
+				Serial1.print(F("ok\n"));
+			}
+			break;
+		case 'X':
+			//todo: X0 command
+			//! X0 MMU reset
+			break;
+		case 'P':
+			// check FINDA status
+			if (!isFilamentLoadedPinda())
+			{
+				Serial1.print(F("0"));
 			}
 			else
 			{
-				println_log(F("Error: Invalid Filament Number Selected"));
+				Serial1.print(F("1"));
 			}
+			Serial1.print(F("ok\n"));
 			break;
-
 		case 'S':
 			// request for firmware version
 			switch (c2)
@@ -337,33 +297,47 @@ void checkSerialInterface()
 				Serial1.print(FW_BUILDNR);
 				Serial1.print(F("ok\n"));
 				break;
+			//! S3 Read drive errors
 			default:
 				println_log(F("S: Unable to process S Command"));
 				break;
 			}
 			break;
-		case 'P':
-			// check FINDA status
-			if (!isFilamentLoadedPinda())
-			{
-				Serial1.print(F("0"));
-			}
-			else
-			{
-				Serial1.print(F("1"));
-			}
-			Serial1.print(F("ok\n"));
-			break;
 		case 'F':
-			// 'F' command is acknowledged but no processing goes on at the moment
+			//todo: 'F' command is acknowledged but no processing goes on at the moment
 			// will be useful for flexible material down the road
+			//"F%d %d"
+			//! F<nr.> \<type\> filament type. <nr.> filament number, \<type\> 0, 1 or 2. Does nothing.
 			println_log(F("Filament Type Selected: "));
 			println_log(c2);
 			Serial1.print(F("ok\n")); // send back OK to the mk3
 			break;
+		case 'C':
+			// move filament from selector ALL the way to printhead
+			if (filamentLoadWithBondTechGear())
+				Serial1.print(F("ok\n"));
+			break;
+		
+		case 'E':
+			ejectFilament(c2 - 0x30);
+			Serial1.print(F("ok\n"));
+			break;
+
+		case 'R':
+			recoverAfterEject();
+			Serial1.print(F("ok\n"));
+			break;
+
+		case 'W': //todo: W0 Wait for user click
+			break;
+
+		case 'K': //todo: K<nr.> cut filament
+			//response "ok\n"
+			break;
+
 		default:
 			print_log(F("ERROR: unrecognized command from the MK3 controller"));
-			Serial1.print(F("ok\n"));
+			//Serial1.print(F("ok\n"));
 		} // end of switch statement
 
 	} // end of cnt > 0 check
@@ -396,27 +370,7 @@ void checkDebugSerialInterface()
 			toolChangeCycleA();
 			break;
 		case 'C':
-			if (kbString[1] == '+')
-			{
-				println_log(F("Increase loading length."));
-				digitalWrite(extruderDirPin, CW); // set the direction of the MMU2 extruder motor
-				delay(1);
-				feedFilament(STEPSPERMM, IGNORE_STOP_AT_EXTRUDER);
-				extruderFeedLen[selectorPos] += 1;
-			}
-			else if (kbString[1] == '-')
-			{
-				println_log(F("Decrease loading length."));
-				digitalWrite(extruderDirPin, CCW); // set the direction of the MMU2 extruder motor
-				delay(1);
-				feedFilament(STEPSPERMM, IGNORE_STOP_AT_EXTRUDER);
-				extruderFeedLen[selectorPos] -= 1;
-			}
-			else
-			{
-				println_log(F("Loading filament"));
-				filamentLoadWithBondTechGear();
-			}
+			filamentLoadWithBondTechGear();
 			break;
 		case 'D':
 			toolChangeCycleD();
@@ -441,7 +395,8 @@ void checkDebugSerialInterface()
 			}
 			break;
 		case 'L':
-			loadFilament();
+			if (loadToFindaAndUnloadFromSelector(kbString[1] - 0x30))
+				println_log(F("ok\n"));
 			break;
 		case 'P':
 			println_log(F("Park selector and idler"));
@@ -467,24 +422,26 @@ void checkDebugSerialInterface()
 			}
 			break;
 		case 'T':
-			println_log(F("Processing 'T' Command"));
-			if ((kbString[1] >= '0') && (kbString[1] <= '4'))
+			if (kbString[1] == '+')
 			{
-				toolChange(kbString[1] - 0x30);
+				println_log(F("Increase loading length."));
+				feedFilament(STEPSPERMM, IGNORE_STOP_AT_EXTRUDER);
+				extruderFeedLen[selectorPos] += 1;
+			}
+			else if (kbString[1] == '-')
+			{
+				println_log(F("Decrease loading length."));
+				feedFilament(-STEPSPERMM, IGNORE_STOP_AT_EXTRUDER);
+				extruderFeedLen[selectorPos] -= 1;
+			}
+			else
+			{
+				if (toolChange(kbString[1] - 0x30))
+					println_log(F("ok\n"));
 			}
 			break;
 		case 'U':
-			println_log(F("Processing 'U' Command"));
-			if (idlerStatus == QUICKPARKED)
-			{
-				quickUnParkIdler(); // un-park the idler from a quick park
-			}
-			if (idlerStatus == INACTIVE)
-			{
-				unParkIdler(); // turn on the idler motor
-			}
 			unloadFilament(); //unload the filament
-			parkIdler();			 // park the idler motor and turn it off
 			break;
 		case 'Z':
 			printStatus();
@@ -612,16 +569,6 @@ void csTurnAmount(int steps, int dir)
 	// FIXME ??? NEEDED ???
 	// wait 1 milliseconds
 	delayMicroseconds(1500); // changed from 500 to 1000 microseconds on 10.6.18, changed to 1500 on 10.7.18)
-
-#ifdef DEBUG
-	int scount;
-	print_log(F("raw steps: "));
-	println_log(steps);
-
-	scount = steps * STEPSIZE;
-	print_log(F("total number of steps: "));
-	println_log(scount);
-#endif
 
 	for (uint16_t i = 0; i <= (steps * STEPSIZE); i++)
 	{
@@ -764,9 +711,18 @@ void idlerturnamount(int steps, int dir)
  * 144 steps = 1mm of filament (using the current mk8 gears in the MMU2)
  *
  *****************************************************/
-void feedFilament(unsigned int steps, int stoptoextruder)
+void feedFilament(int steps, int stoptoextruder)
 {
-	for (unsigned int i = 0; i <= steps; i++)
+	if (steps > 0)
+	{
+		digitalWrite(extruderDirPin, CW); // set the direction of the MMU2 extruder motor
+	}
+	else
+	{
+		digitalWrite(extruderDirPin, CCW); // set the direction of the MMU2 extruder motor
+	}
+	delay(1);
+	for (unsigned int i = 0; i <= abs(steps); i++)
 	{
 		digitalWrite(extruderStepPin, HIGH);
 		delayMicroseconds(PINHIGH); // delay for 10 useconds
@@ -830,8 +786,6 @@ bool loadFilamentToFinda()
 	unsigned long startTime, currentTime;
 
 	digitalWrite(extruderEnablePin, ENABLE);
-	digitalWrite(extruderDirPin, CW); // set the direction of the MMU2 extruder motor
-	delay(1);
 
 	startTime = millis();
 
@@ -867,9 +821,9 @@ bool unloadFilament()
 		return true;
 	}
 
+	moveIdler(selectorPos);
+
 	digitalWrite(extruderEnablePin, ENABLE); // turn on the extruder motor
-	digitalWrite(extruderDirPin, CCW);		 // set the direction of the MMU2 extruder motor
-	delay(1);
 
 	startTime = millis();
 	startTime1 = millis();
@@ -893,13 +847,14 @@ loop:
 		// check for timeout waiting for FINDA sensor to trigger
 		if ((currentTime - startTime) > TIMEOUT_LOAD_UNLOAD)
 		{
+			moveIdler(5);
 			// 10 seconds worth of trying to unload the filament
 			println_log(F("unloadFilamentToFinda(): UNLOAD FILAMENT ERROR: filament is not unloading properly, stuck between mk3 and mmu2"));
 			return false;
 		}
 	}
 
-	feedFilament(STEPSPERMM, IGNORE_STOP_AT_EXTRUDER); // 1mm and then check the pinda status
+	feedFilament(-STEPSPERMM, IGNORE_STOP_AT_EXTRUDER); // 1mm and then check the pinda status
 
 	// keep unloading until we hit the FINDA sensor
 	if (isFilamentLoadedPinda())
@@ -909,7 +864,8 @@ loop:
 
 	// back the filament away from the selector by UNLOAD_LENGTH_BACK_COLORSELECTOR mm
 	digitalWrite(extruderDirPin, CCW);
-	feedFilament(STEPSPERMM * UNLOAD_LENGTH_BACK_COLORSELECTOR, IGNORE_STOP_AT_EXTRUDER);
+	feedFilament(-STEPSPERMM * UNLOAD_LENGTH_BACK_COLORSELECTOR, IGNORE_STOP_AT_EXTRUDER);
+	moveIdler(5);
 	return true;
 }
 
@@ -928,7 +884,6 @@ loop:
  *****************************************************/
 void parkIdler()
 {
-	return;
 	int newSetting;
 
 	digitalWrite(idlerEnablePin, ENABLE);
@@ -939,9 +894,6 @@ void parkIdler()
 
 	idlerturnamount(newSetting, CW); // move the bearing roller out of the way
 	idlerStatus = INACTIVE;
-
-	digitalWrite(idlerEnablePin, DISABLE);	// turn off the roller bearing stepper motor  (nice to do, cuts down on CURRENT utilization)
-	digitalWrite(extruderEnablePin, DISABLE); // turn off the extruder stepper motor as well
 }
 
 /*****************************************************
@@ -950,7 +902,6 @@ void parkIdler()
  *****************************************************/
 void unParkIdler()
 {
-	return;
 	int rollerSetting;
 
 	digitalWrite(idlerEnablePin, ENABLE); // turn on (enable) the roller bearing motor
@@ -1027,69 +978,34 @@ void quickUnParkIdler()
  * (T) Tool Change Command - this command is the core command used my the mk3 to drive the mmu2 filament selection
  *
  *****************************************************/
-void toolChange(int newPos)
+bool toolChange(int newPos)
 {
-	//++toolChangeCount; // count the number of tool changes
-	//++trackToolChanges;
-
-	//print_log(F("Tool Change Count: "));
-	//println_log(toolChangeCount);
-
-	if (newPos == selectorPos)
-	{ // already at the correct filament selection
-		if (!isFilamentLoadedPinda())
-		{ // no filament loaded
-
-			println_log(F("toolChange: filament not currently loaded, loading ..."));
-
-			moveIdler(newPos); // move the filament selector stepper motor to the right spot
-			filamentLoadToMK3();
-			quickParkIdler();
-			repeatTCmdFlag = INACTIVE; // used to help the 'C' command to feed the filament again
-		}
-		else
-		{
-			println_log(F("toolChange:  filament already loaded to mk3 extruder"));
-			repeatTCmdFlag = ACTIVE; // used to help the 'C' command to not feed the filament again
-		}
-	}
-	else
+	if ((newPos < 0) || (newPos > 4))
 	{
-		// different filament position
-		repeatTCmdFlag = INACTIVE; // turn off the repeat Commmand Flag (used by 'C' Command)
-		if (isFilamentLoadedPinda())
-		{
-
-			println_log(F("toolChange: Unloading filament"));
-
-			moveIdler(selectorPos); // point to the current extruder
-			unloadFilament();		// have to unload the filament first
-		}
-
-		// reset the color selector stepper motor (gets out of alignment)
-		/*if (trackToolChanges > TOOLSYNC)
-		{
-			println_log(F("toolChange: Synchronizing the Filament Selector Head"));
-			syncColorSelector();
-			//FIXME : add syncIdlerSelector here
-			activateColorSelector(); // turn the color selector motor back on
-			trackToolChanges = 0;
-		}*/
-#ifdef DEBUG
-		println_log(F("toolChange: Selecting the proper Idler Location"));
-#endif
-		moveIdler(newPos);
-#ifdef DEBUG
-		println_log(F("toolChange: Selecting the proper Selector Location"));
-#endif
-		moveSelector(newPos);
-#ifdef DEBUG
-		println_log(F("toolChange: Loading Filament: loading the new filament to the mk3"));
-#endif
-		filamentLoadToMK3(); // moves the idler and loads the filament
-		selectorPos = newPos;
-		quickParkIdler();
+		println_log(F("T: Invalid filament Selection"));
+		return false;
 	}
+
+	if (!unloadFilament())
+	{
+		moveIdler(5); // park idler
+		println_log(F("T: Filament unloading error"));
+		return false;
+	}
+
+	moveIdler(newPos);
+	moveSelector(newPos);
+	if (!loadFilamentToFinda())
+	{
+		moveIdler(5); // park idler
+		return false;
+	}
+	if (!filamentLoadToMK3())
+	{
+		moveIdler(5); // park idler
+		return false;
+	}
+	return true;
 } // end of ToolChange processing
 
 /*****************************************************
@@ -1097,7 +1013,7 @@ void toolChange(int newPos)
  * this routine is executed as part of the 'T' Command (Load Filament)
  *
  *****************************************************/
-void filamentLoadToMK3()
+bool filamentLoadToMK3()
 {
 #ifdef FILAMENTSWITCH_BEFORE_EXTRUDER
 	int flag;
@@ -1106,23 +1022,7 @@ void filamentLoadToMK3()
 #endif
 	int startTime, currentTime;
 
-	if ((idlerPos < 0) || (idlerPos > 4))
-	{
-		println_log(F("filamentLoadToMK3(): fixing current extruder variable"));
-		idlerPos = 0;
-	}
-#ifdef DEBUG
-	println_log(F("Attempting to move Filament to Print Head Extruder Bondtech Gears"));
-	//unParkIdler();
-	print_log(F("filamentLoadToMK3():  idlerPos: "));
-	println_log(idlerPos);
-#endif
-
-	deActivateColorSelector();
-
 	digitalWrite(extruderEnablePin, ENABLE); // turn on the extruder stepper motor (10.14.18)
-	digitalWrite(extruderDirPin, CW);		 // set extruder stepper motor to push filament towards the mk3
-	delay(1);								 // wait 1 millisecond
 
 	startTime = millis();
 
@@ -1134,23 +1034,15 @@ loop:
 	// added this timeout feature on 10.4.18 (2 second timeout)
 	if ((currentTime - startTime) > 2000)
 	{
-		fixTheProblem("FILAMENT LOAD ERROR:  Filament not detected by FINDA sensor, check the selector head in the MMU2");
-
-		startTime = millis();
+		println_log(F("FILAMENT LOAD ERROR:  Filament not detected by FINDA sensor, check the selector head in the MMU2"));
+		return false;
 	}
 	// keep feeding the filament until the pinda sensor triggers
 	if (!isFilamentLoadedPinda())
 		goto loop;
-loop1:
-	if (isFilamentLoadedtoExtruder())
-	{
-		// switch is active (this is not a good condition)
-		fixTheProblem("FILAMENT LOAD ERROR: Filament Switch in the MK3 is active (see the RED LED), it is either stuck open or there is debris");
-		goto loop1;
-	}
 
 	// go DIST_MMU_EXTRUDER mm
-	feedFilament(STEPSPERMM * DIST_MMU_EXTRUDER, STOP_AT_EXTRUDER);
+	feedFilament(STEPSPERMM * extruderFeedLen[selectorPos], STOP_AT_EXTRUDER);
 
 #ifdef FILAMENTSWITCH_BEFORE_EXTRUDER
 	// insert until the 2nd filament sensor
@@ -1183,6 +1075,7 @@ loop1:
 	// go an additional DIST_EXTRUDER_BTGEAR
 	feedFilament(STEPSPERMM * DIST_EXTRUDER_BTGEAR, IGNORE_STOP_AT_EXTRUDER);
 #endif
+	return true;
 }
 
 /*****************************************************
@@ -1206,28 +1099,20 @@ bool filamentLoadWithBondTechGear()
 		return false;
 	}
 
-	if (idlerStatus == QUICKPARKED)
-	{
-		quickUnParkIdler();
-	}
-	if (idlerStatus == INACTIVE)
-	{
-		unParkIdler();
-	}
+	moveIdler(selectorPos);
 
 	digitalWrite(greenLED, HIGH); // turn on the green LED (for debug purposes)
 	digitalWrite(extruderEnablePin, ENABLE); // turn on the extruder stepper motor
-	digitalWrite(extruderDirPin, CW);		 // set extruder stepper motor to push filament towards the mk3
 
 	// feed the filament from the MMU2 into the bondtech gear
-	feedFilament(STEPSPERMM * extruderFeedLen[selectorPos], IGNORE_STOP_AT_EXTRUDER);
+	feedFilament(STEPSPERMM * DIST_EXTRUDER_BTGEAR, IGNORE_STOP_AT_EXTRUDER);
 	digitalWrite(greenLED, LOW); // turn off the green LED (for debug purposes)
 
 #ifdef DEBUG
 	println_log(F("C Command: parking the idler"));
 #endif
 
-	parkIdler();
+	moveIdler(5);
 
 #ifdef FILAMENTSWITCH_ON_EXTRUDER
 	//Wait for MMU code in Marlin to load the filament and activate the filament switch
@@ -1253,9 +1138,7 @@ void printHelp()
 	println_log(F("'+' - Select next tool."));
 	println_log(F("'-' - Select previous tool."));
 	println_log(F("'A' - Tool change in cycle."));
-	println_log(F("'C' - Load filament"));
-	println_log(F("'C+' - increase loading length."));
-	println_log(F("'C-' - decrease loading length."));
+	println_log(F("'C' - Load filament into extruder"));
 	delay(100);
 	println_log(F("'D' - Load and unload all filaments in cycle."));
 	println_log(F("'I0'-'I5' - Move idler to position (5 = park position)."));
@@ -1269,6 +1152,8 @@ void printHelp()
 	println_log(F("'S-' - Adjust selector position five steps left."));
 	delay(100);
 	println_log(F("'T0'-'T4' - Tool change."));
+	println_log(F("'T+' - increase loading length."));
+	println_log(F("'T-' - decrease loading length."));
 	println_log(F("'U' - Unload filament"));
 	println_log(F("'Z' - Status"));
 }
@@ -1436,6 +1321,53 @@ bool loadFilament()
 	feedFilament(STEPSPERMM * loadLengthAfterFinda, IGNORE_STOP_AT_EXTRUDER);
 	return true;
 }
+
+bool loadToFindaAndUnloadFromSelector(int newPos)
+{
+	if ((newPos < 0) || (newPos > 4))
+	{
+		println_log(F("Error: Invalid Filament Number Selected"));
+		return false;
+	}
+	if (isFilamentLoadedPinda())
+	{
+		println_log(F("Error: Filament loaded"));
+		return false;
+	}
+	moveIdler(newPos);
+	moveSelector(newPos);
+	if (!loadFilamentToFinda())
+	{
+		return false;
+	}
+	if (!unloadFilament())
+	{
+		return false;
+	}
+	return true;
+}
+
+void ejectFilament(int newPos)
+{
+	ejectPos = newPos;
+	const uint8_t selector_position = (newPos <= 2) ? 4 : 0;
+	if (isFilamentLoadedPinda())
+	{
+		unloadFilament();
+	}
+	moveIdler(newPos);
+	moveSelector(selector_position);
+	feedFilament(STEPSPERMM * DISTANCE_EJECT, IGNORE_STOP_AT_EXTRUDER);
+	moveIdler(5);
+}
+
+void recoverAfterEject()
+{
+	moveIdler(ejectPos);
+	feedFilament(-STEPSPERMM * DISTANCE_EJECT, IGNORE_STOP_AT_EXTRUDER);
+	moveIdler(5);
+}
+
 
 /************************************************************************************************************/
 /************************************************************************************************************/

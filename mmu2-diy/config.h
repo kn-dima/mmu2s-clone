@@ -33,7 +33,7 @@
 //#define DIST_MMU_EXTRUDER 890
 #define DIST_MMU_EXTRUDER 690
 #define DIST_EXTRUDER_BTGEAR 30
-
+#define DISTANCE_EJECT 100
 
 #define STEPSIZE SIXTEENTH_STEP    // setup for each of the three stepper motors (jumper settings for M0,M1,M2) on the RAMPS 1.x board
 
@@ -74,7 +74,7 @@
 
 #define filamentSwitchON 0
 //#define FILAMENTSWITCH_BEFORE_EXTRUDER // turn on if the filament switch is before the extruder, turn off for the mk3s-mmu filament switch
-#define FILAMENTSWITCH_ON_EXTRUDER // turn on if the filament switch on is the extruder, turn on for the mk3s-mmu filament switch
+//#define FILAMENTSWITCH_ON_EXTRUDER // turn on if the filament switch on is the extruder, turn on for the mk3s-mmu filament switch
 
 #ifdef GT2560
 // added this pin as a debug pin (lights a green LED so I can see the 'C0' command in action
