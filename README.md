@@ -7,10 +7,10 @@ Project on https://www.thingiverse.com/thing:3910546
 Now work with :
 * MMU2S
 * SKR mini v1.1 
-- GT2560 board - not tested
+- GT2560 board - configuration deleted
++ USB Mass storage device for firmware upload
 
 #TODO :
-* USB Mass storage device for firmware upload
 * storing settings on sd card
 
 * describe new feature

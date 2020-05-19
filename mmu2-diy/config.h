@@ -11,6 +11,10 @@
 #define FW_VERSION 90             // config.h  (MM-control-01 firmware)
 #define FW_BUILDNR 168             // config.h  (MM-control-01 firmware)
 
+#define DebugSerial MarlinCompositeSerial
+//#define DebugSerial Serial
+#define PrinterSerial Serial1
+
 #define SERIAL1ENABLED    1
 #define ENABLE LOW                // 8825 stepper motor enable is active low
 #define DISABLE HIGH              // 8825 stepper motor disable is active high

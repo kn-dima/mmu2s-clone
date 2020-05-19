@@ -1,5 +1,6 @@
 ﻿#include "print.h"
 #include "msc_sd.h"
+#include "config.h"
 
 /*************************/
 int ENABLE_SSD1306 = 0;
@@ -20,12 +21,12 @@ IOPrint::IOPrint()
 void IOPrint::setup()
 {
 #ifdef SERIAL_DEBUG
-    Serial.begin(250000); // startup the local serial interface (changed to 2 Mbaud on 10.7.18
+    DebugSerial.begin(115200); // startup the local serial interface (changed to 2 Mbaud on 10.7.18
 #ifdef SERIAL_DEBUG_WAIT_FOR_PORT
-    while (!Serial)
+    while (!DebugSerial)
     {
         delay(200); // wait for serial port to connect. needed for native USB port only
-        Serial.println(F("waiting for serial port"));
+        DebugSerial.println(F("waiting for serial port"));
     }
 #endif
 #endif
@@ -34,7 +35,7 @@ void IOPrint::setup()
     // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
     if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C))
     { // Address 0x3D for 128x64
-        Serial.println(F("SSD1306 allocation failed"));
+        DebugSerial.println(F("SSD1306 allocation failed"));
         ENABLE_SSD1306 = 0;
     }
     if (ENABLE_SSD1306)
@@ -61,7 +62,7 @@ void manage_screen()
 void println_log(const __FlashStringHelper *msg)
 {
 #ifdef SERIAL_DEBUG
-    Serial.println(msg);
+    DebugSerial.println(msg);
 #endif
 #ifdef SSD1306
     manage_screen();
@@ -72,7 +73,7 @@ void println_log(const __FlashStringHelper *msg)
 void println_log(const char *msg)
 {
 #ifdef SERIAL_DEBUG
-    Serial.println(msg);
+    DebugSerial.println(msg);
 #endif
 #ifdef SSD1306
     manage_screen();
@@ -83,7 +84,7 @@ void println_log(const char *msg)
 void println_log(String msg)
 {
 #ifdef SERIAL_DEBUG
-    Serial.println(msg);
+    DebugSerial.println(msg);
 #endif
 #ifdef SSD1306
     manage_screen();
@@ -94,7 +95,7 @@ void println_log(String msg)
 void println_log(int msg)
 {
 #ifdef SERIAL_DEBUG
-    Serial.println(msg);
+    DebugSerial.println(msg);
 #endif
 #ifdef SSD1306
     manage_screen();
@@ -105,7 +106,7 @@ void println_log(int msg)
 void println_log(unsigned int msg)
 {
 #ifdef SERIAL_DEBUG
-    Serial.println(msg);
+    DebugSerial.println(msg);
 #endif
 #ifdef SSD1306
     manage_screen();
@@ -116,7 +117,7 @@ void println_log(unsigned int msg)
 void println_log(char msg)
 {
 #ifdef SERIAL_DEBUG
-    Serial.println(msg);
+    DebugSerial.println(msg);
 #endif
 #ifdef SSD1306
     manage_screen();
@@ -127,7 +128,7 @@ void println_log(char msg)
 void print_log(const __FlashStringHelper *msg)
 {
 #ifdef SERIAL_DEBUG
-    Serial.print(msg);
+    DebugSerial.print(msg);
 #endif
 #ifdef SSD1306
     manage_screen();
@@ -138,7 +139,7 @@ void print_log(const __FlashStringHelper *msg)
 void print_log(const char *msg)
 {
 #ifdef SERIAL_DEBUG
-    Serial.println(msg);
+    DebugSerial.println(msg);
 #endif
 #ifdef SSD1306
     manage_screen();
@@ -149,7 +150,7 @@ void print_log(const char *msg)
 void print_log(String msg)
 {
 #ifdef SERIAL_DEBUG
-    Serial.println(msg);
+    DebugSerial.println(msg);
 #endif
 #ifdef SSD1306
     manage_screen();
@@ -160,7 +161,7 @@ void print_log(String msg)
 void print_log(char msg)
 {
 #ifdef SERIAL_DEBUG
-    Serial.println(msg);
+    DebugSerial.println(msg);
 #endif
 #ifdef SSD1306
     manage_screen();

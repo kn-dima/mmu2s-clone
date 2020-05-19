@@ -23,6 +23,11 @@ IOPrint ioprint;
 /*************** */
 
 int command = 0;
+String debugSerialReadBuffer = "";
+bool needClearDebugBuffer = false;
+String printerSerialReadBuffer = "";
+bool needClearPrinterBuffer = false;
+#define DebugSerialMaxCommandSize 10
 
 // absolute position of bearing stepper motor
 // this line calibrated for my unit
@@ -176,18 +181,56 @@ void Application::loop()
  * Serial read until new line
  * 
  *****************************************************/
-String ReadSerialStrUntilNewLine()
+String ReadDebugSerialStrUntilNewLine()
 {
-	String str = "";
 	char c;
-	while (Serial.available())
+	if (DebugSerial.available() > DebugSerialMaxCommandSize)
 	{
-		c = char(Serial.read());
-		str += c;
+		DebugSerial.flush();
+		return "";
 	}
-	if ((c == '\n') || (c == '\r'))
+	if (needClearDebugBuffer) 
 	{
-		return str;
+		debugSerialReadBuffer = "";
+		needClearDebugBuffer = false;
+	}
+	while (DebugSerial.available())
+	{
+		c = char(DebugSerial.read());
+		debugSerialReadBuffer += c;
+		if ((c == '\n') || (c == '\r'))
+		{
+			needClearDebugBuffer = true;
+			if (debugSerialReadBuffer.length() > 1) return debugSerialReadBuffer;
+			return "";
+		} 
+	}
+	return "";
+}
+
+String ReadPrinterSerialStrUntilNewLine()
+{
+	char c;
+	if (PrinterSerial.available() > DebugSerialMaxCommandSize)
+	{
+		PrinterSerial.flush();
+		return "";
+	}
+	if (needClearPrinterBuffer) 
+	{
+		printerSerialReadBuffer = "";
+		needClearPrinterBuffer = false;
+	}
+	while (PrinterSerial.available())
+	{
+		c = char(PrinterSerial.read());
+		printerSerialReadBuffer += c;
+		if ((c == '\n') || (c == '\r'))
+		{
+			needClearPrinterBuffer = true;
+			if (printerSerialReadBuffer.length() > 1) return printerSerialReadBuffer;
+			return "";
+		} 
 	}
 	return "";
 }
@@ -199,150 +242,136 @@ String ReadSerialStrUntilNewLine()
  *****************************************************/
 void checkSerialInterface()
 {
-	int cnt;
-	String inputLine;
-	int index;
+	String inputLine = ReadPrinterSerialStrUntilNewLine();
 
-	index = 0;
-	if ((cnt = Serial1.available()) > 0)
+	if (inputLine.length() == 0) return;
+
+	if (true) //(inputLine[0] != 'P')
 	{
-
-		inputLine = Serial1.readString(); // fetch the command from the mmu2 serial input interface
-
-		if (inputLine[0] != 'P')
-		{
-			print_log(F("MMU Command: "));
-			println_log(inputLine);
-		}
-	process_more_commands: // parse the inbound command
-		unsigned char c1, c2;
-
-		c1 = inputLine[index++]; // fetch single characer from the input line
-		c2 = inputLine[index++]; // fetch 2nd character from the input line
-		inputLine[index++];		 // carriage return
-
-		// process commands coming from the mk3 controller
-		//***********************************************************************************
-		// Commands still to be implemented:
-		// X0 (MMU Reset)
-		// F0 (Filament type select),
-		//***********************************************************************************
-		switch (c1)
-		{
-		case 'T':
-			if (toolChange(c2 - 0x30))
-			{
-				Serial1.print(F("ok\n")); // send command acknowledge back to mk3 controller
-			}
-			break;
-		case 'L':
-			if (loadToFindaAndUnloadFromSelector(c2 - 0x30))
-				Serial1.print(F("ok\n"));
-			break;
-		case 'M':
-			//todo: M command
-			//! M0 set TMC2130 to normal mode
-			//! M1 set TMC2130 to stealth mode
-			//response "ok\n"
-			break;
-		case 'U':
-			if (unloadFilament())
-			{
-				Serial1.print(F("ok\n"));
-			}
-			break;
-		case 'X':
-			//todo: X0 command
-			//! X0 MMU reset
-			break;
-		case 'P':
-			// check FINDA status
-			if (!isFilamentLoadedPinda())
-			{
-				Serial1.print(F("0"));
-			}
-			else
-			{
-				Serial1.print(F("1"));
-			}
-			Serial1.print(F("ok\n"));
-			break;
-		case 'S':
-			// request for firmware version
-			switch (c2)
-			{
-			case '0':
-				println_log(F("S: Sending back OK to MK3"));
-				Serial1.print(F("ok\n"));
-				break;
-			case '1':
-				println_log(F("S: FW Version Request"));
-				Serial1.print(FW_VERSION);
-				Serial1.print(F("ok\n"));
-				break;
-			case '2':
-				println_log(F("S: Build Number Request"));
-				println_log(F("Initial Communication with MK3 Controller: Successful"));
-				Serial1.print(FW_BUILDNR);
-				Serial1.print(F("ok\n"));
-				break;
-			//! S3 Read drive errors
-			default:
-				println_log(F("S: Unable to process S Command"));
-				break;
-			}
-			break;
-		case 'F':
-			//todo: 'F' command is acknowledged but no processing goes on at the moment
-			// will be useful for flexible material down the road
-			//"F%d %d"
-			//! F<nr.> \<type\> filament type. <nr.> filament number, \<type\> 0, 1 or 2. Does nothing.
-			println_log(F("Filament Type Selected: "));
-			println_log(c2);
-			Serial1.print(F("ok\n")); // send back OK to the mk3
-			break;
-		case 'C':
-			// move filament from selector ALL the way to printhead
-			if (filamentLoadWithBondTechGear())
-				Serial1.print(F("ok\n"));
-			break;
-		
-		case 'E':
-			ejectFilament(c2 - 0x30);
-			Serial1.print(F("ok\n"));
-			break;
-
-		case 'R':
-			recoverAfterEject();
-			Serial1.print(F("ok\n"));
-			break;
-
-		case 'W': //todo: W0 Wait for user click
-			break;
-
-		case 'K': //todo: K<nr.> cut filament
-			//response "ok\n"
-			break;
-
-		default:
-			print_log(F("ERROR: unrecognized command from the MK3 controller"));
-			//Serial1.print(F("ok\n"));
-		} // end of switch statement
-
-	} // end of cnt > 0 check
-
-	if (index < cnt)
-	{
-		goto process_more_commands;
+		print_log(F("MMU Command: "));
+		println_log(inputLine);
 	}
-	// }  // check for early commands
+
+	unsigned char c1, c2;
+
+	c1 = inputLine[0]; // fetch single characer from the input line
+	c2 = inputLine[1]; // fetch 2nd character from the input line
+
+	// process commands coming from the mk3 controller
+	//***********************************************************************************
+	// Commands still to be implemented:
+	// X0 (MMU Reset)
+	// F0 (Filament type select),
+	//***********************************************************************************
+	switch (c1)
+	{
+	case 'T':
+		if (toolChange(c2 - 0x30))
+		{
+			Serial1.print(F("ok\n")); // send command acknowledge back to mk3 controller
+		}
+		break;
+	case 'L':
+		if (loadToFindaAndUnloadFromSelector(c2 - 0x30))
+			Serial1.print(F("ok\n"));
+		break;
+	case 'M':
+		//todo: M command
+		//! M0 set TMC2130 to normal mode
+		//! M1 set TMC2130 to stealth mode
+		//response "ok\n"
+		break;
+	case 'U':
+		if (unloadFilament())
+		{
+			Serial1.print(F("ok\n"));
+		}
+		break;
+	case 'X':
+		//todo: X0 command
+		//! X0 MMU reset
+		break;
+	case 'P':
+		// check FINDA status
+		if (!isFilamentLoadedPinda())
+		{
+			println_log(F("0ok\n"));
+			Serial1.print(F("0ok\n"));
+		}
+		else
+		{
+			println_log(F("1ok\n"));
+			Serial1.print(F("1ok\n"));
+		}
+		break;
+	case 'S':
+		// request for firmware version
+		switch (c2)
+		{
+		case '0':
+			println_log(F("S: Sending back OK to MK3"));
+			Serial1.print(F("ok\n"));
+			break;
+		case '1':
+			println_log(F("S: FW Version Request"));
+			Serial1.print(FW_VERSION);
+			Serial1.print(F("ok\n"));
+			break;
+		case '2':
+			println_log(F("S: Build Number Request"));
+			println_log(F("Initial Communication with MK3 Controller: Successful"));
+			Serial1.print(FW_BUILDNR);
+			Serial1.print(F("ok\n"));
+			break;
+		//! S3 Read drive errors
+		default:
+			println_log(F("S: Unable to process S Command"));
+			break;
+		}
+		break;
+	case 'F':
+		//todo: 'F' command is acknowledged but no processing goes on at the moment
+		// will be useful for flexible material down the road
+		//"F%d %d"
+		//! F<nr.> \<type\> filament type. <nr.> filament number, \<type\> 0, 1 or 2. Does nothing.
+		println_log(F("Filament Type Selected: "));
+		println_log(c2);
+		Serial1.print(F("ok\n")); // send back OK to the mk3
+		break;
+	case 'C':
+		// move filament from selector ALL the way to printhead
+		if (filamentLoadWithBondTechGear())
+			Serial1.print(F("ok\n"));
+		break;
+	
+	case 'E':
+		ejectFilament(c2 - 0x30);
+		Serial1.print(F("ok\n"));
+		break;
+
+	case 'R':
+		recoverAfterEject();
+		Serial1.print(F("ok\n"));
+		break;
+
+	case 'W': //todo: W0 Wait for user click
+		break;
+
+	case 'K': //todo: K<nr.> cut filament
+		//response "ok\n"
+		break;
+
+	default:
+		print_log(F("ERROR: unrecognized command from the MK3 controller"));
+		//Serial1.print(F("ok\n"));
+	} // end of switch statement
 }
 
 void checkDebugSerialInterface()
 {
 	String kbString;
 
-	kbString = ReadSerialStrUntilNewLine();
+	kbString = ReadDebugSerialStrUntilNewLine();
 	if (kbString == "") return;
 
 	if ((kbString[0] == '\r') || (kbString[0] == '\n')) kbString = lastCommand;
@@ -467,11 +496,11 @@ void fixTheProblem(String statement)
 	digitalWrite(colorSelectorEnablePin, DISABLE); // turn off the selector stepper motor
 
 #ifdef SERIAL_DEBUG
-	while (!Serial.available())
+	while (!DebugSerial.available())
 	{
 		//  wait until key is entered to proceed  (this is to allow for operator intervention)
 	}
-	Serial.readString(); // clear the keyboard buffer
+	DebugSerial.readString(); // clear the keyboard buffer
 #endif
 
 	unParkIdler();								  // put the idler stepper motor back to its' original position
@@ -1090,12 +1119,12 @@ bool filamentLoadWithBondTechGear()
 
 	moveIdler(selectorPos);
 
-	digitalWrite(yminLED, HIGH); // turn on the green LED (for debug purposes)
+//	digitalWrite(yminLED, HIGH); // turn on the green LED (for debug purposes)
 	digitalWrite(extruderEnablePin, ENABLE); // turn on the extruder stepper motor
 
 	// feed the filament from the MMU2 into the bondtech gear
 	feedFilament(STEPSPERMM * DIST_EXTRUDER_BTGEAR, IGNORE_STOP_AT_EXTRUDER);
-	digitalWrite(yminLED, LOW); // turn off the green LED (for debug purposes)
+//	digitalWrite(yminLED, LOW); // turn off the green LED (for debug purposes)
 
 #ifdef DEBUG
 	println_log(F("C Command: parking the idler"));
@@ -1209,24 +1238,24 @@ void printStatus()
 	println_log(F("idler positions array"));
 	for (int i = 0; i <= 5; i++)
 	{
-	  	Serial.print(idlerPosCoord[i]);
-	  	Serial.print(' ');
+	  	DebugSerial.print(idlerPosCoord[i]);
+	  	DebugSerial.print(' ');
 	}
  	println_log(' ');
 
 	println_log(F("selector positions array"));
 	for (int i = 0; i <= 5; i++)
 	{
-	  	Serial.print(selectorPosCoord[i]);
-	  	Serial.print(' ');
+	  	DebugSerial.print(selectorPosCoord[i]);
+	  	DebugSerial.print(' ');
 	}
 	println_log(' ');
 
 	println_log(F("extruder feed length array"));
 	for (int i = 0; i <= 4; i++)
 	{
-	  	Serial.print(extruderFeedLen[i]);
-	  	Serial.print(' ');
+	  	DebugSerial.print(extruderFeedLen[i]);
+	  	DebugSerial.print(' ');
 	}
  	println_log(' ');
 
@@ -1238,14 +1267,14 @@ void printStatus()
 	println_log(cdenstatus);
 	print_log(F("Extruder endstop status: "));
 	fstatus = digitalRead(filamentSwitch);
-	Serial.println(fstatus);
+	DebugSerial.println(fstatus);
 	println_log(F("PINDA | EXTRUDER"));
 	while (true)
 	{
 		isFilamentLoadedPinda() ? print_log(F("ON    | ")) : print_log(F("OFF   | "));
 		isFilamentLoadedtoExtruder() ? println_log(F("ON")) : println_log(F("OFF"));
 		delay(200);
-		String str = ReadSerialStrUntilNewLine();
+		String str = ReadDebugSerialStrUntilNewLine();
 		if (str != "")
 		{ 
 			break;
