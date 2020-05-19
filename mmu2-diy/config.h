@@ -1,26 +1,29 @@
 ﻿#ifndef CONFIG_H
 #define CONFIG_H
 
+//defines moved to platformio.ini
+//#define SKRMINI
+//#define GT2560
+
 //#define DEBUG
+
+#define MMU2_VERSION "5.0  10/11/19"
+#define FW_VERSION 90             // config.h  (MM-control-01 firmware)
+#define FW_BUILDNR 168             // config.h  (MM-control-01 firmware)
 
 #define SERIAL1ENABLED    1
 #define ENABLE LOW                // 8825 stepper motor enable is active low
 #define DISABLE HIGH              // 8825 stepper motor disable is active high
 
-#define MMU2_VERSION "5.0  10/11/19"
-
 //#define STEPSPERMM  144ul           // these are the number of steps required to travel 1 mm using the extruder motor
-// real travel (calculated at 200 mm)
+// real travel with my unit (calculated at 200 mm)
 //SBS  167/200 = 0,835
 //PLA  162/200 = 0,81
 //FLEX 164/200 = 0,82
 //ABS  169/200 = 0,845
 #define STEPSPERMM  177l           // these are the number of steps required to travel 1 mm using the extruder motor
 
-#define S1_WAIT_TIME 10  //wait time for serial 1 (mmu<->printer)
-
-#define FW_VERSION 90             // config.h  (MM-control-01 firmware)
-#define FW_BUILDNR 168             // config.h  (MM-control-01 firmware)
+#define S1_WAIT_TIME 10000  //wait time for serial 1 (mmu<->printer)
 
 #define TIMEOUT_LOAD_UNLOAD 20000
 
@@ -68,9 +71,6 @@
 #define IDLERMOTORDELAY  540     //540 useconds      (idler motor)  was at '500' on 10.13.18
 #define EXTRUDERMOTORDELAY 60 //60//50     // 150 useconds    (controls filament feed speed to the printer)
 #define SELECTORMOTORDELAY 72 // 60 useconds    (selector motor)
-
-//#define SKRMINI
-//#define GT2560
 
 #define filamentSwitchON 0
 //#define FILAMENTSWITCH_BEFORE_EXTRUDER // turn on if the filament switch is before the extruder, turn off for the mk3s-mmu filament switch
@@ -134,10 +134,17 @@
 #endif
 
 #ifdef SKRMINI
+#define USE_USB_COMPOSITE
+#define HAS_ONBOARD_SD
+
 // https://github.com/bigtreetech/BIGTREETECH-SKR-MINI-V1.1/blob/master/hardware/SKR-mini-V1.1-PIN.pdf
 // added this pin as a debug pin (lights a green LED so I can see the 'C0' command in action
 // Y_MIN_PIN
-#define greenLED PC1
+#define yminLED PC1
+#define zminLED PC0
+#define h0LED PA8
+#define fanLED PC8
+#define bedLED PC9
 
 // modified code on 10.2.18 to accomodate RAMPS 1.6 board mapping
 //

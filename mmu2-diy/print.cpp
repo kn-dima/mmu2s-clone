@@ -1,4 +1,5 @@
 ﻿#include "print.h"
+#include "msc_sd.h"
 
 /*************************/
 int ENABLE_SSD1306 = 0;

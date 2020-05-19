@@ -14,6 +14,7 @@
 #include "application.h"
 
 #include "config.h"
+#include "msc_sd.h"
 
 /*************** */
 char cstr[16];
@@ -128,7 +129,11 @@ continue_processing:
 	pinMode(colorSelectorDirPin, OUTPUT);
 	pinMode(colorSelectorStepPin, OUTPUT);
 
-	pinMode(greenLED, OUTPUT); // green LED used for debug purposes
+	pinMode(yminLED, OUTPUT); // green LED used for debug purposes
+	pinMode(zminLED, OUTPUT); // green LED used for debug purposes
+	pinMode(bedLED, OUTPUT); // green LED used for debug purposes
+	pinMode(h0LED, OUTPUT); // green LED used for debug purposes
+	pinMode(fanLED, OUTPUT); // green LED used for debug purposes
 
 	println_log(F("finished setting up input and output pins"));
 
@@ -151,6 +156,8 @@ continue_processing:
 		println_log(F("Unable to clear the Color Selector, please remove filament"));
 	}
 
+    MSC_SD_init();
+
 	println_log(F("Inialialization Complete, let's multicolor print ...."));
 
 } // end of init() routine
@@ -163,9 +170,10 @@ continue_processing:
 void Application::loop()
 {
 	// wait for 100 milliseconds
-	delay(100);
+	delay(1);
 	// check the serial interface for input commands from the mk3
 	checkSerialInterface();
+    MarlinMSC.loop();
 
 #ifdef SERIAL_DEBUG
 	// check for keyboard input
@@ -1101,12 +1109,12 @@ bool filamentLoadWithBondTechGear()
 
 	moveIdler(selectorPos);
 
-	digitalWrite(greenLED, HIGH); // turn on the green LED (for debug purposes)
+	digitalWrite(yminLED, HIGH); // turn on the green LED (for debug purposes)
 	digitalWrite(extruderEnablePin, ENABLE); // turn on the extruder stepper motor
 
 	// feed the filament from the MMU2 into the bondtech gear
 	feedFilament(STEPSPERMM * DIST_EXTRUDER_BTGEAR, IGNORE_STOP_AT_EXTRUDER);
-	digitalWrite(greenLED, LOW); // turn off the green LED (for debug purposes)
+	digitalWrite(yminLED, LOW); // turn off the green LED (for debug purposes)
 
 #ifdef DEBUG
 	println_log(F("C Command: parking the idler"));
