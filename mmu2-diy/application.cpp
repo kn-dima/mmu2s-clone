@@ -76,42 +76,9 @@ String lastCommand = "Z\r\n";
  *****************************************************/
 void Application::setup()
 {
-	int waitCount;
 	/************/
 	ioprint.setup();
 	/************/
-
-	println_log(MMU2_VERSION);
-	delay(200);
-
-	Serial1.begin(115200); // Hardware serial interface (mmu<->printer board)
-	delay(100);
-
-	println_log(F("Sending START command to mk3 controller board"));
-	// ***************************************
-	// THIS NEXT COMMAND IS CRITICAL ... IT TELLS THE MK3 controller that an MMU is present
-	// ***************************************
-	Serial1.print(F("start\n")); // attempt to tell the mk3 that the mmu is present
-
-	//***************************
-	//  check the serial interface to see if it is active
-	//***************************
-	waitCount = 0;
-	while (!Serial1.available())
-	{
-
-		println_log(F("Waiting for message from mk3"));
-		delay(1000);
-		++waitCount;
-		if (waitCount >= S1_WAIT_TIME)
-		{
-			println_log(F("X seconds have passed, aborting wait for printer board (Marlin) to respond"));
-			goto continue_processing;
-		}
-	}
-	println_log(F("inbound message from Marlin"));
-
-continue_processing:
 
 	pinMode(idlerDirPin, OUTPUT);
 	pinMode(idlerStepPin, OUTPUT);
@@ -142,6 +109,8 @@ continue_processing:
 	digitalWrite(extruderEnablePin, DISABLE);	  //  DISABLE the extruder motor  (motor #2)
 	digitalWrite(colorSelectorEnablePin, DISABLE); // DISABLE the color selector motor  (motor #3)
 
+	delay(200);
+
 	// Initialize stepper
 	println_log(F("Syncing the Idler Selector Assembly")); // do this before moving the selector motor
 	initIdlerPosition();								   // reset the roller bearing position
@@ -157,6 +126,18 @@ continue_processing:
 	}
 
     MSC_SD_init();
+
+	println_log(MMU2_VERSION);
+
+	Serial1.begin(115200); // Hardware serial interface (mmu<->printer board)
+	delay(100);
+
+	println_log(F("Sending START command to mk3 controller board"));
+
+	// ***************************************
+	// THIS NEXT COMMAND IS CRITICAL ... IT TELLS THE MK3 controller that an MMU is present
+	// ***************************************
+	Serial1.print(F("\nstart\n")); // attempt to tell the mk3 that the mmu is present
 
 	println_log(F("Inialialization Complete, let's multicolor print ...."));
 
